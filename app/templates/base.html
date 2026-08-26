@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FitForge Agent | Evidence-Based Job Opportunity Assessment{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.11" integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKcUHTYXxSgzKs50P4MhmK2TXNwM77jz8yiCpELFYl" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="header-container">
+                <div class="brand-group">
+                    <div class="brand-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="brand-title">FitForge Agent</h1>
+                        <p class="brand-subtitle">Evidence-Based Multi-Agent Job Assessment System</p>
+                    </div>
+                </div>
+                <div class="header-badge">
+                    <span class="status-dot"></span>
+                    <span>Milestone 1 • Deterministic Slice</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="app-footer">
+            <div class="footer-container">
+                <p>FitForge Agent &copy; 2026 • Local Autonomous Workflow Engine</p>
+                <div class="footer-meta">
+                    <span>Python 3.11+</span>
+                    <span>•</span>
+                    <span>FastAPI</span>
+                    <span>•</span>
+                    <span>Multi-Agent Architecture</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>

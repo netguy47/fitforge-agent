@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-container">
+
+    <!-- Privacy Notice Banner -->
+    <div class="privacy-notice">
+        <div class="privacy-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+        <div class="privacy-text">
+            <strong>Privacy & Security Advisory:</strong> FitForge operates on local deterministic mock workflows for Milestone 1. Please remove any personally identifiable information (e.g. Social Security numbers, confidential client names, home addresses, or phone numbers) before running the assessment.
+        </div>
+    </div>
+
+    <!-- Workflow Submission Form Card -->
+    <div class="form-container-card">
+        <div class="form-header">
+            <div>
+                <h2 class="form-title">Opportunity Assessment Parameters</h2>
+                <p class="form-subtitle">Provide résumé details, job specification, and applicant career constraints to initiate the multi-agent assessment.</p>
+            </div>
+            <div class="form-actions-top">
+                <button type="button" id="load-sample-btn" class="btn btn-secondary" onclick="loadSampleData()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Load Sample (Restaurant DM)
+                </button>
+            </div>
+        </div>
+
+        <form id="workflow-form" onsubmit="handleWorkflowSubmit(event)">
+            <div class="two-col-inputs">
+                <!-- Resume Input -->
+                <div class="input-group">
+                    <label for="resume-text" class="input-label">
+                        <span>Candidate Résumé Text <span class="required-star">*</span></span>
+                        <span class="label-hint">Paste full work history, skills & certifications</span>
+                    </label>
+                    <textarea id="resume-text" name="resume_text" class="input-textarea" rows="12" placeholder="Paste candidate résumé text here..." required></textarea>
+                </div>
+
+                <!-- Job Description Input -->
+                <div class="input-group">
+                    <label for="jd-text" class="input-label">
+                        <span>Target Job Description <span class="required-star">*</span></span>
+                        <span class="label-hint">Paste full role overview, responsibilities & requirements</span>
+                    </label>
+                    <textarea id="jd-text" name="job_description_text" class="input-textarea" rows="12" placeholder="Paste job description text here..." required></textarea>
+                </div>
+            </div>
+
+            <!-- Applicant Priorities Section -->
+            <div class="priorities-section">
+                <h3 class="section-title">Applicant Constraints & Career Priorities</h3>
+                <div class="priorities-grid">
+                    <div class="input-group">
+                        <label for="min-comp" class="input-label">Minimum Compensation</label>
+                        <input type="text" id="min-comp" name="min_compensation" class="input-text" placeholder="e.g. $95,000 base + 20% bonus">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="location-pref" class="input-label">Location / Commute Preference</label>
+                        <input type="text" id="location-pref" name="location_preference" class="input-text" placeholder="e.g. Metro Region, max 50 miles travel">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="desired-role" class="input-label">Desired Role Type</label>
+                        <input type="text" id="desired-role" name="desired_role_type" class="input-text" placeholder="e.g. District Manager / Multi-Unit Operations">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="non-negotiables" class="input-label">Non-Negotiable Conditions (one per line)</label>
+                        <textarea id="non-negotiables" name="non_negotiables" class="input-textarea input-textarea-sm" rows="3" placeholder="e.g. Dedicated territory under 12 units&#10;Company vehicle allowance"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Section -->
+            <div class="form-footer">
+                <button type="submit" id="submit-workflow-btn" class="btn btn-primary btn-lg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Run Agent Workflow
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Workflow Execution Progress Bar (Dynamic) -->
+    <div id="workflow-progress" class="workflow-progress-card hidden">
+        <div class="progress-header">
+            <h4>Executing FitForge Specialist Agent Pipeline...</h4>
+            <span id="current-stage-text">Initializing coordinator</span>
+        </div>
+        <div class="pipeline-stepper">
+            <div class="step-node active" id="step-intake">
+                <div class="step-circle">1</div>
+                <div class="step-label">Intake Agent</div>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-node" id="step-evidence">
+                <div class="step-circle">2</div>
+                <div class="step-label">Evidence Agent</div>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-node" id="step-fit">
+                <div class="step-circle">3</div>
+                <div class="step-label">Fit Analyst</div>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-node" id="step-planner">
+                <div class="step-circle">4</div>
+                <div class="step-label">Action Planner</div>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-node" id="step-gate">
+                <div class="step-circle">5</div>
+                <div class="step-label">Quality Gate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Output Target Container -->
+    <div id="workflow-results-container">
+        {% if workflow %}
+            {% include "partials/workflow_result.html" %}
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
