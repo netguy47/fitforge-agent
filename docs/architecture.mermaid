@@ -1,0 +1,58 @@
+graph TB
+    subgraph Client["Client Tier"]
+        Browser["User / Web Browser<br/>(FastAPI / Jinja2 + HTMX + Tailwind-style CSS)"]
+    end
+
+    subgraph CloudRun["Google Cloud Run (us-central1)<br/>fitforge-runner Service Account"]
+        subgraph WebLayer["FastAPI Gateway & Ingress Guards"]
+            Ingress["FastAPI Gateway (Port 8080)<br/>CORS Allowlist & Input Validation"]
+            Limiter["DemoRateLimiter<br/>• Concurrency Guard (1 Active)<br/>• 60s Client IP Cooldown<br/>• Memory Expiration Pruning"]
+        end
+
+        subgraph Orchestration["FitForge Workflow Engine"]
+            Coord["Workflow Coordinator<br/>(State Machine & Audit Trail)"]
+            
+            subgraph AgentCore["Google ADK Multi-Agent System (InMemoryRunner)"]
+                Intake["1. Intake Agent<br/>(Text Normalization & Schema Parse)"]
+                Evidence["2. Evidence Agent<br/>(Requirement & Experience Mapping)"]
+                Fit["3. Fit Analyst<br/>(Multi-Factor Scoring & Recommendation)"]
+                Action["4. Action Planner<br/>(Targeted Interview Strategies)"]
+                Quality["5. Quality Gate<br/>(Schema & Hallucination Gatekeeper)"]
+            end
+        end
+    end
+
+    subgraph GoogleCloudServices["Google Cloud Platform Services"]
+        SecretMgr["Google Secret Manager<br/>fitforge-gemini-api-key:1"]
+        FirestoreDB["Google Cloud Firestore (Native)<br/>(default) Database • 'workflows' Collection"]
+        GeminiAPI["Google Gemini 3.5 Flash<br/>(gemini-3.5-flash via Google GenAI SDK)"]
+    end
+
+    %% Client / Gateway Flows
+    Browser -->|"HTTPS POST /api/workflows (JSON)"| Ingress
+    Browser -->|"HTTPS GET /api/workflows/{id}"| Ingress
+    Browser -->|"HTTPS GET /health"| Ingress
+    Ingress --> Limiter
+    Limiter -->|"Acquire Mutex / Pass Cooldown"| Coord
+
+    %% Agent Execution Pipeline
+    Coord -->|"Step 1: Raw Input"| Intake
+    Intake -->|"Step 2: Normalized Spec"| Evidence
+    Evidence -->|"Step 3: Evidence Matrix"| Fit
+    Fit -->|"Step 4: Scored Fit Assessment"| Action
+    Action -->|"Step 5: Draft Action Plan"| Quality
+
+    %% Quality Gate Loop
+    Quality -->|"Pass: Validated & Complete"| Coord
+    Quality -.->|"Fail: Max 1 Schema Correction"| Coord
+
+    %% Cloud Integration Flows
+    Intake -.->|"Prompt Execution"| GeminiAPI
+    Evidence -.->|"Prompt Execution"| GeminiAPI
+    Fit -.->|"Prompt Execution"| GeminiAPI
+    Action -.->|"Prompt Execution"| GeminiAPI
+    Quality -.->|"Validation Execution"| GeminiAPI
+
+    CloudRun -.->|"Runtime Env Secret"| SecretMgr
+    Coord -->|"Persist Workflow State & Audit Trail"| FirestoreDB
+    Coord -->|"Retrieve Workflow State"| FirestoreDB

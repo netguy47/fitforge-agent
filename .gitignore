@@ -17,7 +17,6 @@ lib/
 lib64/
 parts/
 sdist/
-var/
 wheels/
 *.egg-info/
 .installed.cfg
@@ -30,7 +29,11 @@ htmlcov/
 
 # Environment and secrets
 .env
+.env.*
 *.local.env
+credentials.json
+service_account.json
+gcp-key.json
 
 # IDEs and OS
 .vscode/
@@ -39,3 +42,9 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Temporary & Scratch Files
+scratch/
+*.zip
+*.tar.gz
+*.log
