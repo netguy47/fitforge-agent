@@ -1,8 +1,8 @@
-# FitForge Agent — Milestone 1 (Deterministic Vertical Slice)
+# FitForge Agent — Evidence-Based Opportunity Assessment System
 
 FitForge converts a candidate's résumé, job description, and applicant career priorities into an evidence-based job-opportunity assessment. It produces a clear recommendation (`Pursue`, `Investigate`, `Pass`), transparent fit score (0–100), requirement-to-evidence matrix, strengths, gaps, risks, clarification questions, prioritized next actions, and interview preparation talking points.
 
-This repository implements **Milestone 1**: a locally runnable, deterministic vertical slice with a coordinator orchestrating 5 specialist agents, in-memory state persistence, and a responsive web interface.
+This repository implements a coordinated multi-agent architecture supporting deterministic local evaluation, official Google Agent Development Kit (ADK) execution with `gemini-3.5-flash`, and pluggable persistence backends (in-memory and Google Cloud Firestore).
 
 ---
 
@@ -128,13 +128,19 @@ Open your browser at **[http://127.0.0.1:8000](http://127.0.0.1:8000)**.
 ## 📡 API Reference
 
 ### `GET /health`
-Returns service status and operational metadata.
+Returns service status, active execution mode, and persistence configuration.
 ```json
 {
   "status": "healthy",
-  "milestone": "1",
-  "version": "0.1.0",
-  "mode": "deterministic_local_slice"
+  "milestone": "3A",
+  "version": "0.3.0",
+  "mode": "deterministic_local_slice",
+  "execution_mode": "deterministic",
+  "gemini_model": "gemini-3.5-flash",
+  "has_credentials": "False",
+  "persistence_backend": "in_memory",
+  "firestore_database": "(default)",
+  "firestore_collection": "workflows"
 }
 ```
 
@@ -165,14 +171,21 @@ Retrieves a previously executed workflow and audit trail by UUID.
 
 ---
 
-## ⚙️ Execution Modes & Configuration
+## ⚙️ Execution Modes & Persistence Configuration
 
-FitForge Agent supports two explicit execution modes:
+### Execution Modes
 
 | Mode | Environment Config | Description |
 |---|---|---|
 | **Deterministic** | `EXECUTION_MODE=deterministic` (Default) | Verified local rule-based slice. Zero external network calls or credentials required. Default mode for automated testing. |
 | **Google ADK & Gemini** | `EXECUTION_MODE=gemini` | Live specialist orchestration powered by official Google Agent Development Kit (`google-adk`) and `gemini-3.5-flash` (`google-genai`). |
+
+### Persistence Backends
+
+| Backend | Environment Config | Description |
+|---|---|---|
+| **In-Memory** | `PERSISTENCE_BACKEND=in_memory` (Default) | Thread-safe local dictionary storage. Does not construct external database clients. |
+| **Firestore** | `PERSISTENCE_BACKEND=firestore` | Google Cloud Firestore document persistence. Stores serialized workflows under configurable collection. Lazy client initialization. |
 
 ### Environment Variables
 
@@ -181,6 +194,10 @@ FitForge Agent supports two explicit execution modes:
 | `EXECUTION_MODE` | `deterministic` | Execution adapter selection (`deterministic` or `gemini`). |
 | `GEMINI_MODEL` | `gemini-3.5-flash` | Gemini model identifier for ADK agent stages. |
 | `GEMINI_API_KEY` | *(None)* | Google Gemini API key (required only when `EXECUTION_MODE=gemini`). |
+| `PERSISTENCE_BACKEND` | `in_memory` | Persistence backend selection (`in_memory` or `firestore`). |
+| `GOOGLE_CLOUD_PROJECT` | *(None)* | Google Cloud project ID for Firestore persistence. |
+| `FIRESTORE_DATABASE` | `(default)` | Firestore database ID. |
+| `FIRESTORE_COLLECTION` | `workflows` | Firestore collection name. |
 | `ALLOWED_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated CORS allowlist. |
 
 ---
@@ -215,9 +232,12 @@ fitforge-agent/
 │   │   ├── fit_analyst.py
 │   │   ├── action_planner.py
 │   │   └── quality_gate.py
-│   ├── repositories/
+│   ├── repositories/            # Persistence Layer Abstraction
 │   │   ├── __init__.py
-│   │   └── in_memory.py         # Thread-safe in-memory store
+│   │   ├── base.py              # BaseWorkflowRepository abstract interface
+│   │   ├── factory.py           # Repository resolution factory
+│   │   ├── in_memory.py         # Thread-safe in-memory store
+│   │   └── firestore.py         # Google Cloud Firestore persistence adapter
 │   ├── static/
 │   │   ├── app.js               # Client-side interaction & safe DOM rendering
 │   │   └── style.css            # Dark-mode styling with execution mode badges
@@ -231,11 +251,13 @@ fitforge-agent/
 │   └── restaurant_district_manager.json # Fictionalized benchmark dataset
 ├── tests/
 │   ├── __init__.py
+│   ├── conftest.py              # Network isolation tripwire fixture
 │   ├── test_agents.py           # Deterministic agent logic & boundaries
 │   ├── test_health.py           # Service health & route validation
 │   ├── test_quality_gate.py     # Grounding, contradiction check & retry bounds
 │   ├── test_workflow.py         # End-to-end workflow execution & determinism
-│   └── test_milestone2_adk.py   # Mocked ADK integration, injection & schema tests
+│   ├── test_milestone2_adk.py   # ADK runner execution, injection & schema tests
+│   └── test_milestone3_firestore.py # Offline Firestore repository & factory tests
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
@@ -248,16 +270,19 @@ fitforge-agent/
 
 ## 🔒 Privacy, Security & Testing
 
-- **Mock Testing Policy**: Automated tests run with mocked Google GenAI / ADK clients and make **zero network calls**, incurring zero API charges.
+- **Mock Testing Policy**: Automated tests run with mocked Google GenAI / ADK and fake Firestore clients and make **zero network calls**, guarded by an automatic socket interceptor.
 - **Prompt-Injection Defense**: Specialist prompts explicitly instruct agents to treat résumé and job-description texts as untrusted data and ignore embedded instructions or overrides.
-- **Sanitized Logging**: Server logs record only workflow ID, stage name, model identifier, latency, and status — never raw résumés, job descriptions, or API keys.
-- **No Silent Fallback**: If Gemini execution fails, the coordinator transitions to `failed` state and logs a sanitized error. It never silently masks errors by falling back to deterministic mode.
-- **Verification Status**: Live Google Cloud / Gemini API calls remain unexecuted until explicit authorization and secure credential configuration are provided (Phase C).
+- **Sanitized Logging**: Server logs record only workflow ID, stage name, latency, and status — never raw résumés, job descriptions, API keys, or provider exception details.
+- **No Silent Fallback**: If Gemini or Firestore operations fail, the coordinator records sanitized errors (`gemini_unavailable`, `firestore_unavailable`, etc.) and halts. It never silently masks failures.
 
 ---
 
-## 🗺️ Milestone Roadmap
+## 🗺️ Milestone Roadmap & Implementation Status
 
-- [x] **Milestone 1**: Deterministic 5-stage local slice with UI & complete test suite.
-- [x] **Milestone 2**: Google Agent Development Kit (ADK) & `gemini-3.5-flash` adapter architecture with strict schema enforcement, prompt-injection defense, and mock test coverage.
-- [ ] **Milestone 3**: Firestore persistent storage integration & Cloud Run deployment.
+- [x] **Milestone 1**: Deterministic 5-stage local slice with UI & complete test suite. *(Implemented and verified)*
+- [x] **Milestone 2**: Google Agent Development Kit (ADK) & `gemini-3.5-flash` adapter architecture with strict schema enforcement, prompt-injection defense, and controlled live verification. *(Implemented and verified)*
+- [ ] **Milestone 3**: Persistence & Deployment:
+  - **Firestore Adapter**: *Implemented and verified with offline fake-client tests*
+  - **Live Firestore Persistence**: *Unverified (Live persistence test not yet authorized/performed)*
+  - **Firestore Resource Provisioning**: *Not performed*
+  - **Cloud Run Deployment**: *Planned, not performed*

@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.coordinator import WorkflowCoordinator
 from app.models import WorkflowInput, WorkflowResult
-from app.repositories.in_memory import workflow_repo
+from app.repositories import get_repository
 from app.settings import get_settings
 
 # Initialize paths
@@ -24,7 +24,7 @@ SAMPLES_DIR = BASE_DIR.parent / "samples"
 app = FastAPI(
     title="FitForge Agent",
     description="Evidence-Based Job Opportunity Assessment Multi-Agent System (Google ADK & Gemini 3.5)",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 # Current settings
@@ -52,12 +52,15 @@ async def health_check() -> Dict[str, str]:
     cfg = get_settings()
     return {
         "status": "healthy",
-        "milestone": "2",
-        "version": "0.2.0",
+        "milestone": "3A",
+        "version": "0.3.0",
         "mode": "deterministic_local_slice" if cfg.is_deterministic_mode else "gemini_adk",
         "execution_mode": cfg.execution_mode,
         "gemini_model": cfg.gemini_model,
         "has_credentials": str(bool(cfg.gemini_api_key)),
+        "persistence_backend": cfg.persistence_backend,
+        "firestore_database": cfg.firestore_database,
+        "firestore_collection": cfg.firestore_collection,
     }
 
 
@@ -163,8 +166,9 @@ async def create_workflow(
             detail="Gemini ADK execution mode is active, but GEMINI_API_KEY is not configured on the server.",
         )
 
-    # Execute workflow using active coordinator
-    coordinator = WorkflowCoordinator(repo=workflow_repo, settings=cfg)
+    # Execute workflow using active coordinator and configured repository
+    repo = get_repository(settings=cfg)
+    coordinator = WorkflowCoordinator(repo=repo, settings=cfg)
     result = coordinator.execute_workflow(workflow_input)
 
     # Return HTML partial if browser UI requested text/html
@@ -185,7 +189,9 @@ async def create_workflow(
 @app.get("/api/workflows/{workflow_id}", response_model=WorkflowResult, tags=["Workflows"])
 async def get_workflow(workflow_id: str):
     """Retrieve full workflow state and audit trail by workflow ID."""
-    workflow = workflow_repo.get(workflow_id)
+    cfg = get_settings()
+    repo = get_repository(settings=cfg)
+    workflow = repo.get(workflow_id)
     if workflow is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

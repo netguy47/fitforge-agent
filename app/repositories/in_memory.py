@@ -2,10 +2,11 @@
 
 from typing import Dict, List, Optional
 from app.models import WorkflowResult
+from app.repositories.base import BaseWorkflowRepository
 
 
-class WorkflowRepository:
-    """In-memory storage for workflow state and audit history."""
+class InMemoryWorkflowRepository(BaseWorkflowRepository):
+    """Thread-safe in-memory storage for workflow state and audit history."""
 
     def __init__(self) -> None:
         self._storage: Dict[str, WorkflowResult] = {}
@@ -31,5 +32,6 @@ class WorkflowRepository:
         self._storage.clear()
 
 
-# Default singleton repository instance
-workflow_repo = WorkflowRepository()
+# Backward compatibility aliases
+WorkflowRepository = InMemoryWorkflowRepository
+workflow_repo = InMemoryWorkflowRepository()

@@ -20,6 +20,22 @@ class Settings(BaseModel):
         default=None,
         description="Google Gemini API key for live execution (optional in deterministic mode)",
     )
+    persistence_backend: str = Field(
+        default="in_memory",
+        description="Active persistence backend: 'in_memory' or 'firestore'",
+    )
+    google_cloud_project: Optional[str] = Field(
+        default=None,
+        description="Google Cloud project identifier for Firestore persistence",
+    )
+    firestore_database: str = Field(
+        default="(default)",
+        description="Firestore database identifier",
+    )
+    firestore_collection: str = Field(
+        default="workflows",
+        description="Firestore collection name for workflow documents",
+    )
     allowed_origins: List[str] = Field(
         default_factory=lambda: ["http://localhost:8000", "http://127.0.0.1:8000"],
         description="CORS allowed origins",
@@ -36,12 +52,26 @@ class Settings(BaseModel):
             )
         return mode
 
+    @field_validator("persistence_backend")
+    @classmethod
+    def validate_persistence_backend(cls, v: str) -> str:
+        backend = v.strip().lower()
+        if backend not in {"in_memory", "firestore"}:
+            raise ValueError(
+                f"Invalid PERSISTENCE_BACKEND '{v}'. Must be either 'in_memory' or 'firestore'."
+            )
+        return backend
+
     @classmethod
     def from_env(cls) -> "Settings":
         """Load settings from current OS environment variables."""
         mode = os.environ.get("EXECUTION_MODE", "deterministic")
         model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
         api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        persistence = os.environ.get("PERSISTENCE_BACKEND", "in_memory")
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+        database = os.environ.get("FIRESTORE_DATABASE", "(default)")
+        collection = os.environ.get("FIRESTORE_COLLECTION", "workflows")
         origins_str = os.environ.get("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
         origins = [o.strip() for o in origins_str.split(",") if o.strip()]
         log_level = os.environ.get("LOG_LEVEL", "info")
@@ -50,6 +80,10 @@ class Settings(BaseModel):
             execution_mode=mode,
             gemini_model=model,
             gemini_api_key=api_key if api_key and api_key.strip() else None,
+            persistence_backend=persistence,
+            google_cloud_project=project if project and project.strip() else None,
+            firestore_database=database,
+            firestore_collection=collection,
             allowed_origins=origins,
             log_level=log_level,
         )
@@ -61,6 +95,14 @@ class Settings(BaseModel):
     @property
     def is_gemini_mode(self) -> bool:
         return self.execution_mode == "gemini"
+
+    @property
+    def is_in_memory_persistence(self) -> bool:
+        return self.persistence_backend == "in_memory"
+
+    @property
+    def is_firestore_persistence(self) -> bool:
+        return self.persistence_backend == "firestore"
 
     def validate_credentials(self) -> None:
         """Verify required credentials exist for active mode."""
@@ -75,6 +117,10 @@ class Settings(BaseModel):
             "execution_mode": self.execution_mode,
             "gemini_model": self.gemini_model,
             "has_api_key": bool(self.gemini_api_key),
+            "persistence_backend": self.persistence_backend,
+            "google_cloud_project": self.google_cloud_project,
+            "firestore_database": self.firestore_database,
+            "firestore_collection": self.firestore_collection,
             "allowed_origins": self.allowed_origins,
             "log_level": self.log_level,
         }

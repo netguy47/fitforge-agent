@@ -21,7 +21,7 @@ from app.models import (
     WorkflowResult,
     WorkflowState,
 )
-from app.repositories.in_memory import WorkflowRepository, workflow_repo
+from app.repositories import BaseWorkflowRepository, get_repository
 from app.settings import Settings, get_settings
 
 logger = logging.getLogger("fitforge.coordinator")
@@ -32,12 +32,12 @@ class WorkflowCoordinator:
 
     def __init__(
         self,
-        repo: Optional[WorkflowRepository] = None,
+        repo: Optional[BaseWorkflowRepository] = None,
         adapter: Optional[WorkflowExecutionAdapter] = None,
         settings: Optional[Settings] = None,
     ) -> None:
-        self.repo = repo or workflow_repo
         self.settings = settings or get_settings()
+        self.repo = repo or get_repository(settings=self.settings)
 
         if adapter is not None:
             self.adapter = adapter
