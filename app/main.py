@@ -49,20 +49,12 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 @app.get("/health", tags=["System"])
 async def health_check() -> Dict[str, str]:
-    """Health check endpoint confirming service status and active execution mode."""
-    cfg = get_settings()
+    """Health check endpoint confirming service status and version."""
     return {
         "status": "healthy",
-        "milestone": "3B",
         "version": "0.3.0",
-        "mode": "deterministic_local_slice" if cfg.is_deterministic_mode else "gemini_adk",
-        "execution_mode": cfg.execution_mode,
-        "gemini_model": cfg.gemini_model,
-        "has_credentials": str(bool(cfg.gemini_api_key)),
-        "persistence_backend": cfg.persistence_backend,
-        "firestore_database": cfg.firestore_database,
-        "firestore_collection": cfg.firestore_collection,
     }
+
 
 
 @app.get("/api/sample", tags=["Workflows"])

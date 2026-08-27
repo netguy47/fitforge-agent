@@ -11,15 +11,20 @@ def client():
 
 
 def test_health_endpoint(client):
-    """Verify GET /health returns 200 OK and expected structure."""
+    """Verify GET /health returns 200 OK and strictly hardened minimal payload."""
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "healthy"
-    assert data["milestone"] in ["1", "2", "3", "3A", "3B"]
-    assert data["mode"] == "deterministic_local_slice"
-    assert "persistence_backend" in data
-    assert data["persistence_backend"] == "in_memory"
+    assert data == {
+        "status": "healthy",
+        "version": "0.3.0",
+    }
+    # Ensure no internal environment/infrastructure leakage
+    assert "persistence_backend" not in data
+    assert "firestore_database" not in data
+    assert "gemini_model" not in data
+    assert "has_credentials" not in data
+    assert "execution_mode" not in data
 
 
 def test_index_page(client):

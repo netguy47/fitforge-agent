@@ -32,15 +32,14 @@ def sample_payload():
 
 
 def test_health_endpoint_is_never_rate_limited():
-    """Requirement: /health is never limited by the demo rate limiter."""
+    """Requirement: /health is never limited by the demo rate limiter and returns hardened payload."""
     client = TestClient(app)
     # Execute multiple rapid health checks
     for _ in range(10):
         response = client.get("/health")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
-        assert data["milestone"] == "3B"
+        assert data == {"status": "healthy", "version": "0.3.0"}
 
 
 def test_first_workflow_accepted_and_immediate_repeat_rejected_with_429(sample_payload):
@@ -95,6 +94,20 @@ def test_instance_concurrency_lock_rejects_simultaneous_execution():
     # Client 2 can now acquire
     limiter.acquire("192.0.2.2")
     limiter.release()
+
+
+def test_memory_pruning_bounds_storage():
+    """Requirement: Rate limiter prunes expired timestamps to maintain bounded memory."""
+    limiter = DemoRateLimiter(cooldown_seconds=10)
+    # Manually inject old timestamp beyond cutoff (cutoff = 100 - 20 = 80)
+    limiter._client_timestamps["old_client_hash"] = 50.0
+    limiter._client_timestamps["recent_client_hash"] = 95.0
+
+    # Trigger acquire at time 100.0 (simulated via _prune_expired)
+    limiter._prune_expired(now=100.0)
+
+    assert "old_client_hash" not in limiter._client_timestamps
+    assert "recent_client_hash" in limiter._client_timestamps
 
 
 def test_no_external_network_calls_in_offline_tests(sample_payload):
