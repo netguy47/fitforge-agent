@@ -129,8 +129,8 @@ def test_workflow_retrieval_404_not_found(client):
 
 def test_deterministic_sample_output(client, sample_payload):
     """Verify identical, repeatable outputs when given identical inputs."""
-    res1 = client.post("/api/workflows", json=sample_payload)
-    res2 = client.post("/api/workflows", json=sample_payload)
+    res1 = client.post("/api/workflows", json=sample_payload, headers={"X-Forwarded-For": "10.0.0.1"})
+    res2 = client.post("/api/workflows", json=sample_payload, headers={"X-Forwarded-For": "10.0.0.2"})
 
     d1 = res1.json()
     d2 = res2.json()

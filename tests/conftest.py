@@ -3,6 +3,8 @@
 import socket
 import pytest
 
+from app.rate_limiter import rate_limiter
+
 
 @pytest.fixture(autouse=True)
 def network_isolation_tripwire(monkeypatch):
@@ -24,3 +26,11 @@ def network_isolation_tripwire(monkeypatch):
 
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     yield
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter_state():
+    """Reset rate limiter state before and after each test."""
+    rate_limiter.reset()
+    yield
+    rate_limiter.reset()

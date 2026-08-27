@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.coordinator import WorkflowCoordinator
 from app.models import WorkflowInput, WorkflowResult
+from app.rate_limiter import extract_client_identifier, rate_limiter
 from app.repositories import get_repository
 from app.settings import get_settings
 
@@ -166,24 +167,31 @@ async def create_workflow(
             detail="Gemini ADK execution mode is active, but GEMINI_API_KEY is not configured on the server.",
         )
 
-    # Execute workflow using active coordinator and configured repository
-    repo = get_repository(settings=cfg)
-    coordinator = WorkflowCoordinator(repo=repo, settings=cfg)
-    result = coordinator.execute_workflow(workflow_input)
+    # Acquire demo rate-limiting and instance execution guard
+    client_id = extract_client_identifier(request)
+    rate_limiter.acquire(client_id)
 
-    # Return HTML partial if browser UI requested text/html
-    if accept and "text/html" in accept:
-        return templates.TemplateResponse(
-            request=request,
-            name="partials/workflow_result.html",
-            context={
-                "workflow": result,
-                "settings": cfg,
-            },
-        )
+    try:
+        # Execute workflow using active coordinator and configured repository
+        repo = get_repository(settings=cfg)
+        coordinator = WorkflowCoordinator(repo=repo, settings=cfg)
+        result = coordinator.execute_workflow(workflow_input)
 
-    # Otherwise return JSON model
-    return result
+        # Return HTML partial if browser UI requested text/html
+        if accept and "text/html" in accept:
+            return templates.TemplateResponse(
+                request=request,
+                name="partials/workflow_result.html",
+                context={
+                    "workflow": result,
+                    "settings": cfg,
+                },
+            )
+
+        # Otherwise return JSON model
+        return result
+    finally:
+        rate_limiter.release()
 
 
 @app.get("/api/workflows/{workflow_id}", response_model=WorkflowResult, tags=["Workflows"])
