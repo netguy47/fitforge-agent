@@ -92,6 +92,14 @@ class EvidenceItem(BaseModel):
     classification: EvidenceClassification
     resume_evidence: str
     reasoning: str
+    parent_requirement: Optional[str] = Field(
+        default=None,
+        description="Original compound requirement from which this atomic claim was decomposed",
+    )
+    atomic_claim: Optional[str] = Field(
+        default=None,
+        description="Decomposed atomic requirement statement",
+    )
 
 
 class FitAssessment(BaseModel):
@@ -132,6 +140,10 @@ class WorkflowResult(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     state: WorkflowState = WorkflowState.CREATED
+    execution_mode: str = Field(
+        default="deterministic",
+        description="Execution adapter used for this workflow run: 'deterministic' or 'gemini'",
+    )
     inputs: WorkflowInput
     normalized_inputs: Optional[NormalizedInput] = None
     evidence_matrix: Optional[List[EvidenceItem]] = None

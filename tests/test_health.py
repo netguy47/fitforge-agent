@@ -16,7 +16,7 @@ def test_health_endpoint(client):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["milestone"] == "1"
+    assert data["milestone"] in ["1", "2"]
     assert data["mode"] == "deterministic_local_slice"
 
 

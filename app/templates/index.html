@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-container">
 
-    <!-- Privacy Notice Banner -->
+    <!-- Mode & Privacy Notice Banner -->
     <div class="privacy-notice">
         <div class="privacy-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -12,7 +12,17 @@
             </svg>
         </div>
         <div class="privacy-text">
-            <strong>Privacy & Security Advisory:</strong> FitForge operates on local deterministic mock workflows for Milestone 1. Please remove any personally identifiable information (e.g. Social Security numbers, confidential client names, home addresses, or phone numbers) before running the assessment.
+            <div>
+                <strong>Active Mode:</strong>
+                {% if settings and settings.is_gemini_mode %}
+                <span class="mode-badge mode-gemini">⚡ Live Google ADK & Gemini 3.5 ({{ settings.gemini_model }})</span>
+                {% else %}
+                <span class="mode-badge mode-deterministic">⚙️ Deterministic Demonstration (Local Slice)</span>
+                {% endif %}
+            </div>
+            <div style="margin-top: 4px; font-size: 0.8rem; color: #94a3b8;">
+                <strong>Privacy & Security Advisory:</strong> FitForge operates with zero external network calls in deterministic mode and does not store credentials or personal identifiers in server logs. Please ensure sensitive PII (Social Security numbers, confidential client names) is removed before submitting.
+            </div>
         </div>
     </div>
 

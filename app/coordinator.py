@@ -1,21 +1,19 @@
 """Workflow Coordinator: Orchestrates multi-agent pipeline and enforces state transitions & audit logs.
 
-Correction-pass behaviour (Milestone 1 QA):
-- On first QG failure, coordinator uses QualityGateAgent.apply_corrections
-  to downgrade/remove unsupported evidence, then recalculates fit, regenerates
-  the action plan, and revalidates.
-- If the second QG still fails, the workflow enters the `failed` state.
+Milestone 2 Architecture:
+- Uses pluggable WorkflowExecutionAdapter (Deterministic or Gemini ADK).
+- Strict state transitions with timestamped audit events.
+- Never silently falls back from Gemini to deterministic on failure.
 """
 
 from datetime import datetime, timezone
+import logging
 from typing import Optional
 from uuid import uuid4
 
-from app.agents.action_planner import ActionPlannerAgent
-from app.agents.evidence import EvidenceAgent
-from app.agents.fit_analyst import FitAnalystAgent
-from app.agents.intake import IntakeAgent
-from app.agents.quality_gate import QualityGateAgent
+from app.execution.base import WorkflowExecutionAdapter
+from app.execution.deterministic import DeterministicExecutionAdapter
+from app.execution.gemini_adk import GeminiAdkExecutionAdapter
 from app.models import (
     AuditEvent,
     RecommendationType,
@@ -24,18 +22,29 @@ from app.models import (
     WorkflowState,
 )
 from app.repositories.in_memory import WorkflowRepository, workflow_repo
+from app.settings import Settings, get_settings
+
+logger = logging.getLogger("fitforge.coordinator")
 
 
 class WorkflowCoordinator:
     """Coordinator that orchestrates specialist agents through defined state transitions."""
 
-    def __init__(self, repo: Optional[WorkflowRepository] = None) -> None:
+    def __init__(
+        self,
+        repo: Optional[WorkflowRepository] = None,
+        adapter: Optional[WorkflowExecutionAdapter] = None,
+        settings: Optional[Settings] = None,
+    ) -> None:
         self.repo = repo or workflow_repo
-        self.intake_agent = IntakeAgent()
-        self.evidence_agent = EvidenceAgent()
-        self.fit_analyst = FitAnalystAgent()
-        self.action_planner = ActionPlannerAgent()
-        self.quality_gate = QualityGateAgent()
+        self.settings = settings or get_settings()
+
+        if adapter is not None:
+            self.adapter = adapter
+        elif self.settings.is_gemini_mode:
+            self.adapter = GeminiAdkExecutionAdapter(settings=self.settings)
+        else:
+            self.adapter = DeterministicExecutionAdapter()
 
     def _transition_state(
         self,
@@ -58,18 +67,23 @@ class WorkflowCoordinator:
         workflow.audit_trail.append(event)
         self.repo.save(workflow)
 
-    def execute_workflow(self, inputs: WorkflowInput, workflow_id: Optional[str] = None) -> WorkflowResult:
+    def execute_workflow(
+        self, inputs: WorkflowInput, workflow_id: Optional[str] = None
+    ) -> WorkflowResult:
+        """Run the full 5-stage agent workflow via the configured execution adapter."""
         wid = workflow_id or str(uuid4())
         workflow = WorkflowResult(
             workflow_id=wid,
             state=WorkflowState.CREATED,
+            execution_mode=self.adapter.mode_name,
             inputs=inputs,
         )
         initial_event = AuditEvent(
             from_state=None,
             to_state=WorkflowState.CREATED,
             agent_name="Coordinator",
-            message="Workflow initialized for job assessment.",
+            message=f"Workflow initialized for job assessment [{self.adapter.mode_name} mode].",
+            details={"mode": self.adapter.mode_name},
         )
         workflow.audit_trail.append(initial_event)
         self.repo.save(workflow)
@@ -77,7 +91,9 @@ class WorkflowCoordinator:
         try:
             if not inputs.resume_text.strip() or not inputs.job_description_text.strip():
                 self._transition_state(
-                    workflow, WorkflowState.FAILED, "Coordinator",
+                    workflow,
+                    WorkflowState.FAILED,
+                    "Coordinator",
                     "Workflow failed: Missing required résumé or job description text.",
                 )
                 workflow.error = "Missing required input: résumé and job description must not be empty."
@@ -86,44 +102,56 @@ class WorkflowCoordinator:
 
             # Stage 1: Intake
             self._transition_state(
-                workflow, WorkflowState.NORMALIZING, self.intake_agent.name,
-                "Normalizing input text, parsing sections, and checking for missing criteria.",
+                workflow,
+                WorkflowState.NORMALIZING,
+                "Intake Agent",
+                f"Normalizing input text, parsing sections, and checking for missing criteria [{self.adapter.mode_name}].",
             )
-            normalized_inputs = self.intake_agent.run(inputs)
+            normalized_inputs = self.adapter.run_intake(inputs)
             workflow.normalized_inputs = normalized_inputs
 
             # Stage 2: Evidence
             self._transition_state(
-                workflow, WorkflowState.MAPPING_EVIDENCE, self.evidence_agent.name,
-                "Extracting job requirements and mapping candidate résumé evidence.",
+                workflow,
+                WorkflowState.MAPPING_EVIDENCE,
+                "Evidence Agent",
+                f"Extracting job requirements and mapping candidate résumé evidence [{self.adapter.mode_name}].",
             )
-            evidence_matrix = self.evidence_agent.run(normalized_inputs)
+            evidence_matrix = self.adapter.run_evidence(normalized_inputs)
             workflow.evidence_matrix = evidence_matrix
 
             # Stage 3: Fit Analyst
             self._transition_state(
-                workflow, WorkflowState.SCORING_FIT, self.fit_analyst.name,
-                "Calculating fit score, evaluating non-negotiables, and formulating recommendation.",
+                workflow,
+                WorkflowState.SCORING_FIT,
+                "Fit Analyst",
+                f"Calculating fit score, evaluating non-negotiables, and formulating recommendation [{self.adapter.mode_name}].",
             )
-            fit_assessment = self.fit_analyst.run(normalized_inputs, evidence_matrix)
+            fit_assessment = self.adapter.run_fit_analyst(normalized_inputs, evidence_matrix)
             workflow.fit_assessment = fit_assessment
 
             # Stage 4: Action Planner
             self._transition_state(
-                workflow, WorkflowState.PLANNING_ACTIONS, self.action_planner.name,
-                "Generating prioritized next steps, employer clarification questions, and interview preparation.",
+                workflow,
+                WorkflowState.PLANNING_ACTIONS,
+                "Action Planner",
+                f"Generating prioritized next steps, employer clarification questions, and interview preparation [{self.adapter.mode_name}].",
             )
-            action_plan = self.action_planner.run(normalized_inputs, evidence_matrix, fit_assessment)
+            action_plan = self.adapter.run_action_planner(
+                normalized_inputs, evidence_matrix, fit_assessment
+            )
             workflow.action_plan = action_plan
 
             # Stage 5: Quality Gate
             self._transition_state(
-                workflow, WorkflowState.VALIDATING, self.quality_gate.name,
-                "Auditing outputs for unsupported claims, contradictions, and completeness.",
+                workflow,
+                WorkflowState.VALIDATING,
+                "Quality Gate",
+                f"Auditing outputs for unsupported claims, contradictions, and completeness [{self.adapter.mode_name}].",
             )
-            quality_report = self.quality_gate.run(
+            quality_report = self.adapter.run_quality_gate(
                 normalized_inputs=normalized_inputs,
-                evidence_matrix=evidence_matrix,
+                matrix=evidence_matrix,
                 fit_assessment=fit_assessment,
                 action_plan=action_plan,
                 current_corrections=0,
@@ -133,28 +161,32 @@ class WorkflowCoordinator:
             # Correction pass (max ONE)
             if not quality_report.passed:
                 self._transition_state(
-                    workflow, WorkflowState.VALIDATING, "Coordinator",
+                    workflow,
+                    WorkflowState.VALIDATING,
+                    "Coordinator",
                     f"Initiating correction pass #1 to resolve {len(quality_report.issues)} validation issue(s).",
                 )
 
                 # 1. Downgrade / remove unsupported evidence
-                evidence_matrix = self.quality_gate.apply_corrections(
-                    normalized_inputs, evidence_matrix, quality_report,
+                evidence_matrix = self.adapter.apply_quality_corrections(
+                    normalized_inputs, evidence_matrix, quality_report
                 )
                 workflow.evidence_matrix = evidence_matrix
 
                 # 2. Recalculate fit with corrected matrix
-                fit_assessment = self.fit_analyst.run(normalized_inputs, evidence_matrix)
+                fit_assessment = self.adapter.run_fit_analyst(normalized_inputs, evidence_matrix)
                 workflow.fit_assessment = fit_assessment
 
                 # 3. Regenerate action plan
-                action_plan = self.action_planner.run(normalized_inputs, evidence_matrix, fit_assessment)
+                action_plan = self.adapter.run_action_planner(
+                    normalized_inputs, evidence_matrix, fit_assessment
+                )
                 workflow.action_plan = action_plan
 
                 # 4. Revalidate
-                quality_report = self.quality_gate.run(
+                quality_report = self.adapter.run_quality_gate(
                     normalized_inputs=normalized_inputs,
-                    evidence_matrix=evidence_matrix,
+                    matrix=evidence_matrix,
                     fit_assessment=fit_assessment,
                     action_plan=action_plan,
                     current_corrections=1,
@@ -164,12 +196,16 @@ class WorkflowCoordinator:
             # Final verdict
             if quality_report.passed:
                 self._transition_state(
-                    workflow, WorkflowState.COMPLETED, "Coordinator",
+                    workflow,
+                    WorkflowState.COMPLETED,
+                    "Coordinator",
                     "All workflow stages and quality gates completed successfully.",
                 )
             else:
                 self._transition_state(
-                    workflow, WorkflowState.FAILED, "Coordinator",
+                    workflow,
+                    WorkflowState.FAILED,
+                    "Coordinator",
                     f"Workflow failed quality gate after 1 correction pass: {'; '.join(quality_report.issues)}",
                 )
                 workflow.error = f"Quality gate validation failed: {'; '.join(quality_report.issues)}"
@@ -178,9 +214,12 @@ class WorkflowCoordinator:
             return workflow
 
         except Exception as e:
+            logger.error("Workflow failed with error in mode '%s': %s", self.adapter.mode_name, str(e))
             self._transition_state(
-                workflow, WorkflowState.FAILED, "Coordinator",
-                f"Workflow execution encountered fatal exception: {str(e)}",
+                workflow,
+                WorkflowState.FAILED,
+                "Coordinator",
+                f"Workflow execution encountered exception: {str(e)}",
             )
             workflow.error = str(e)
             self.repo.save(workflow)

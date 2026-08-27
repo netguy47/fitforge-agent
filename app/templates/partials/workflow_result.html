@@ -21,6 +21,13 @@
                     <span class="recommendation-badge rec-{{ workflow.fit_assessment.recommendation.value|lower if workflow.fit_assessment else 'unknown' }}">
                         {{ workflow.fit_assessment.recommendation.value if workflow.fit_assessment else 'N/A' }}
                     </span>
+                    <span class="mode-badge mode-{{ workflow.execution_mode if workflow.execution_mode else 'deterministic' }}">
+                        {% if workflow.execution_mode == 'gemini' %}
+                        ⚡ Live Gemini 3.5 Flash (ADK)
+                        {% else %}
+                        ⚙️ Deterministic Demo
+                        {% endif %}
+                    </span>
                     <span class="workflow-id-badge">ID: {{ workflow.workflow_id }}</span>
                 </div>
                 <p class="score-explanation">{{ workflow.fit_assessment.score_explanation if workflow.fit_assessment else '' }}</p>

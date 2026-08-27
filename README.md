@@ -165,43 +165,77 @@ Retrieves a previously executed workflow and audit trail by UUID.
 
 ---
 
+## ⚙️ Execution Modes & Configuration
+
+FitForge Agent supports two explicit execution modes:
+
+| Mode | Environment Config | Description |
+|---|---|---|
+| **Deterministic** | `EXECUTION_MODE=deterministic` (Default) | Verified local rule-based slice. Zero external network calls or credentials required. Default mode for automated testing. |
+| **Google ADK & Gemini** | `EXECUTION_MODE=gemini` | Live specialist orchestration powered by official Google Agent Development Kit (`google-adk`) and `gemini-3.5-flash` (`google-genai`). |
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `EXECUTION_MODE` | `deterministic` | Execution adapter selection (`deterministic` or `gemini`). |
+| `GEMINI_MODEL` | `gemini-3.5-flash` | Gemini model identifier for ADK agent stages. |
+| `GEMINI_API_KEY` | *(None)* | Google Gemini API key (required only when `EXECUTION_MODE=gemini`). |
+| `ALLOWED_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated CORS allowlist. |
+
+---
+
 ## 📂 Repository Structure
 
 ```
 fitforge-agent/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py                  # FastAPI endpoints & Jinja2 setup
+│   ├── main.py                  # FastAPI endpoints & health check
 │   ├── models.py                # Pydantic schemas, enums & state machine
-│   ├── coordinator.py           # Multi-agent orchestrator & state transitions
-│   ├── agents/
+│   ├── settings.py              # Configuration & mode validation
+│   ├── coordinator.py           # Multi-agent orchestrator & state machine
+│   ├── execution/               # Execution Adapter Pattern
 │   │   ├── __init__.py
-│   │   ├── base.py              # BaseAgent abstract interface
-│   │   ├── intake.py            # Intake Agent
-│   │   ├── evidence.py          # Evidence Agent
-│   │   ├── fit_analyst.py       # Fit Analyst Agent
-│   │   ├── action_planner.py    # Action Planner Agent
-│   │   └── quality_gate.py      # Quality Gate Agent
+│   │   ├── base.py              # WorkflowExecutionAdapter abstract interface
+│   │   ├── deterministic.py     # Milestone 1 local rule-based adapter
+│   │   └── gemini_adk.py        # Milestone 2 Google ADK / Gemini 3.5 adapter
+│   ├── prompts/                 # Specialist System Instructions & Injection Defense
+│   │   ├── __init__.py          # Common security constraints & injection defenses
+│   │   ├── intake.py            # Intake Agent instructions
+│   │   ├── evidence.py          # Evidence Agent instructions & atomic decomposition
+│   │   ├── fit_analyst.py       # Fit Analyst scoring & qualification distinction
+│   │   ├── action_planner.py    # Action Planner brief & STAR points synthesis
+│   │   └── quality_gate.py      # Quality Gate audit & verbatim check rules
+│   ├── agents/                  # Milestone 1 specialist agent implementations
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── intake.py
+│   │   ├── evidence.py
+│   │   ├── fit_analyst.py
+│   │   ├── action_planner.py
+│   │   └── quality_gate.py
 │   ├── repositories/
 │   │   ├── __init__.py
 │   │   └── in_memory.py         # Thread-safe in-memory store
 │   ├── static/
-│   │   ├── app.js               # Sample loader & client-side interaction
-│   │   └── style.css            # Responsive dark-accented design system
+│   │   ├── app.js               # Client-side interaction & safe DOM rendering
+│   │   └── style.css            # Dark-mode styling with execution mode badges
 │   └── templates/
 │       ├── base.html            # Main HTML layout wrapper
 │       ├── index.html           # Dashboard & submission form
 │       └── partials/
 │           ├── audit_trail.html # Real-time state transition timeline
-│           └── workflow_result.html # Score hero, matrix & strategy cards
+│           └── workflow_result.html # Score hero, matrix, mode badge & strategy cards
 ├── samples/
 │   └── restaurant_district_manager.json # Fictionalized benchmark dataset
 ├── tests/
 │   ├── __init__.py
-│   ├── test_agents.py           # Agent logic, classification & boundaries
+│   ├── test_agents.py           # Deterministic agent logic & boundaries
 │   ├── test_health.py           # Service health & route validation
-│   ├── test_quality_gate.py     # Hallucination check & single-retry bounds
-│   └── test_workflow.py         # End-to-end execution, retrieval & determinism
+│   ├── test_quality_gate.py     # Grounding, contradiction check & retry bounds
+│   ├── test_workflow.py         # End-to-end workflow execution & determinism
+│   └── test_milestone2_adk.py   # Mocked ADK integration, injection & schema tests
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
@@ -212,16 +246,18 @@ fitforge-agent/
 
 ---
 
-## 🔒 Privacy & Security
+## 🔒 Privacy, Security & Testing
 
-- No external APIs or credentials are required for Milestone 1.
-- Sensitive information check: Input forms include notices advising against inputting Social Security numbers, passwords, financial account data, or confidential employer data.
-- Environment configs are strictly read from `.env` (ignored by git).
+- **Mock Testing Policy**: Automated tests run with mocked Google GenAI / ADK clients and make **zero network calls**, incurring zero API charges.
+- **Prompt-Injection Defense**: Specialist prompts explicitly instruct agents to treat résumé and job-description texts as untrusted data and ignore embedded instructions or overrides.
+- **Sanitized Logging**: Server logs record only workflow ID, stage name, model identifier, latency, and status — never raw résumés, job descriptions, or API keys.
+- **No Silent Fallback**: If Gemini execution fails, the coordinator transitions to `failed` state and logs a sanitized error. It never silently masks errors by falling back to deterministic mode.
+- **Verification Status**: Live Google Cloud / Gemini API calls remain unexecuted until explicit authorization and secure credential configuration are provided (Phase C).
 
 ---
 
-## 🗺️ Milestone 2 Roadmap
+## 🗺️ Milestone Roadmap
 
-- **Google Agent Development Kit (ADK) & gemini-3.5-flash Integration**: Replace mock deterministic agents with LLM-backed specialist agents while preserving the coordinator state machine.
-- **Persistent Storage**: Transition from in-memory repository to Google Cloud Firestore.
-- **Serverless Deployment**: Package with Cloud Build and deploy to Google Cloud Run.
+- [x] **Milestone 1**: Deterministic 5-stage local slice with UI & complete test suite.
+- [x] **Milestone 2**: Google Agent Development Kit (ADK) & `gemini-3.5-flash` adapter architecture with strict schema enforcement, prompt-injection defense, and mock test coverage.
+- [ ] **Milestone 3**: Firestore persistent storage integration & Cloud Run deployment.

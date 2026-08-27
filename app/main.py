@@ -1,19 +1,19 @@
-"""FastAPI Application for FitForge Agent (Milestone 1)."""
+"""FastAPI Application for FitForge Agent (Milestone 2 - ADK & Gemini 3.5 Integration)."""
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException, Header, Request, Response, status
+from fastapi import FastAPI, HTTPException, Header, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.coordinator import WorkflowCoordinator
 from app.models import WorkflowInput, WorkflowResult
 from app.repositories.in_memory import workflow_repo
+from app.settings import get_settings
 
 # Initialize paths
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,19 +23,17 @@ SAMPLES_DIR = BASE_DIR.parent / "samples"
 
 app = FastAPI(
     title="FitForge Agent",
-    description="Evidence-Based Job Opportunity Assessment Multi-Agent System",
-    version="0.1.0",
+    description="Evidence-Based Job Opportunity Assessment Multi-Agent System (Google ADK & Gemini 3.5)",
+    version="0.2.0",
 )
 
-# CORS middleware: environment-controlled allowlist (never wildcard with credentials)
-_allowed_origins = [
-    origin.strip()
-    for origin in os.environ.get("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",")
-    if origin.strip()
-]
+# Current settings
+current_settings = get_settings()
+
+# CORS middleware: environment-controlled allowlist
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
+    allow_origins=current_settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Accept"],
@@ -47,18 +45,19 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # Jinja2 Templates
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-# Coordinator instance
-coordinator = WorkflowCoordinator(repo=workflow_repo)
-
 
 @app.get("/health", tags=["System"])
 async def health_check() -> Dict[str, str]:
-    """Health check endpoint confirming service status."""
+    """Health check endpoint confirming service status and active execution mode."""
+    cfg = get_settings()
     return {
         "status": "healthy",
-        "milestone": "1",
-        "version": "0.1.0",
-        "mode": "deterministic_local_slice",
+        "milestone": "2",
+        "version": "0.2.0",
+        "mode": "deterministic_local_slice" if cfg.is_deterministic_mode else "gemini_adk",
+        "execution_mode": cfg.execution_mode,
+        "gemini_model": cfg.gemini_model,
+        "has_credentials": str(bool(cfg.gemini_api_key)),
     }
 
 
@@ -77,12 +76,14 @@ async def get_sample_data() -> Dict[str, Any]:
 
 @app.get("/", response_class=HTMLResponse, tags=["Web Interface"])
 async def get_index_page(request: Request):
-    """Render main web application interface."""
+    """Render main web application interface with execution mode indicators."""
+    cfg = get_settings()
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "workflow": None,
+            "settings": cfg,
         },
     )
 
@@ -101,6 +102,8 @@ async def create_workflow(
     accept: Optional[str] = Header(None),
 ):
     """Execute multi-agent workflow assessment on submitted résumé and job description."""
+    cfg = get_settings()
+
     resume_stripped = workflow_input.resume_text.strip()
     jd_stripped = workflow_input.job_description_text.strip()
 
@@ -134,6 +137,7 @@ async def create_workflow(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Job description must not exceed {_MAX_INPUT_LEN} characters.",
         )
+
     # Priority field length checks
     priorities = workflow_input.priorities
     for field_name, field_val in [
@@ -152,7 +156,15 @@ async def create_workflow(
             detail=f"Non-negotiables list must not exceed {_MAX_NON_NEGOTIABLES} items.",
         )
 
-    # Run deterministic workflow pipeline
+    # Check credentials if in live gemini mode
+    if cfg.is_gemini_mode and not cfg.gemini_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Gemini ADK execution mode is active, but GEMINI_API_KEY is not configured on the server.",
+        )
+
+    # Execute workflow using active coordinator
+    coordinator = WorkflowCoordinator(repo=workflow_repo, settings=cfg)
     result = coordinator.execute_workflow(workflow_input)
 
     # Return HTML partial if browser UI requested text/html
@@ -162,6 +174,7 @@ async def create_workflow(
             name="partials/workflow_result.html",
             context={
                 "workflow": result,
+                "settings": cfg,
             },
         )
 
