@@ -84,6 +84,6 @@ We mastered the Google Agent Development Kit (ADK) architecture, experiencing fi
 * **AI Model**: `Gemini 3.5 Flash (gemini-3.5-flash)`
 * **Reproducible Testing Available**: `Yes` (Comprehensive 80-test pytest suite with offline socket blocker)
 * **Hosted Application URL**: `https://fitforge-agent-169201386255.us-central1.run.app`
-* **Public GitHub Repository**: *(Populated upon GitHub publication)*
+* **Public GitHub Repository**: `https://github.com/netguy47/fitforge-agent`
 * **Video Demo URL**: *(Populated by Donald after manual recording upload)*
 * **Eligibility Exclusion**: *Startup Excellence is NOT selected (Individual entry).*
