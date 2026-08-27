@@ -1,0 +1,34 @@
+# Git & Repository metadata
+.git
+.gitignore
+
+# Environments & Secrets
+.venv
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+service_account.json
+gcp-key.json
+
+# Caches & Bytecode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+
+# Tests & Test Reports
+tests/
+
+# Archives & Audit Files
+*.zip
+*.tar.gz
+*.log
+*audit*.json
+*report*.json
+scratch/
+brain/

@@ -105,10 +105,14 @@ class Settings(BaseModel):
         return self.persistence_backend == "firestore"
 
     def validate_credentials(self) -> None:
-        """Verify required credentials exist for active mode."""
+        """Verify required credentials and project configuration exist for active mode."""
         if self.is_gemini_mode and not self.gemini_api_key:
             raise ValueError(
                 "GEMINI_API_KEY environment variable is required when EXECUTION_MODE='gemini'."
+            )
+        if self.is_firestore_persistence and not self.google_cloud_project:
+            raise ValueError(
+                "GOOGLE_CLOUD_PROJECT environment variable is required when PERSISTENCE_BACKEND='firestore'."
             )
 
     def sanitized_dict(self) -> dict:

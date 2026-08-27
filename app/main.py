@@ -52,7 +52,7 @@ async def health_check() -> Dict[str, str]:
     cfg = get_settings()
     return {
         "status": "healthy",
-        "milestone": "3A",
+        "milestone": "3B",
         "version": "0.3.0",
         "mode": "deterministic_local_slice" if cfg.is_deterministic_mode else "gemini_adk",
         "execution_mode": cfg.execution_mode,

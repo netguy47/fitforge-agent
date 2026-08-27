@@ -283,6 +283,8 @@ fitforge-agent/
 - [x] **Milestone 2**: Google Agent Development Kit (ADK) & `gemini-3.5-flash` adapter architecture with strict schema enforcement, prompt-injection defense, and controlled live verification. *(Implemented and verified)*
 - [ ] **Milestone 3**: Persistence & Deployment:
   - **Firestore Adapter**: *Implemented and verified with offline fake-client tests*
-  - **Live Firestore Persistence**: *Unverified (Live persistence test not yet authorized/performed)*
-  - **Firestore Resource Provisioning**: *Not performed*
-  - **Cloud Run Deployment**: *Planned, not performed*
+  - **Cloud Run Configuration**: *Implemented and verified offline*
+  - **Local Docker Container Execution**: *Blocked because Docker is unavailable*
+  - **Firestore Live Persistence**: *Unverified*
+  - **Cloud Run Deployment**: *Not performed*
+  - **Public Endpoint**: *None*
