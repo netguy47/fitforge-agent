@@ -80,7 +80,7 @@ FitForge operates as a coordinated 5-specialist agent pipeline orchestrated thro
 
 ### 1. Installation
 ```bash
-git clone https://github.com/Donald/fitforge-agent.git
+git clone https://github.com/netguy47/fitforge-agent.git
 cd fitforge-agent
 
 python -m venv .venv
