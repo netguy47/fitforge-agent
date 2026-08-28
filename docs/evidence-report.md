@@ -42,7 +42,7 @@ Content-Type: application/json
   "workflow_id": "a635ea53-a72d-4bd6-924b-84b0146c0dc9",
   "state": "completed",
   "execution_mode": "gemini",
-  "gemini_model": "gemini-3.5-flash",
+  "gemini_model": "gemini-3.6-flash",
   "fit_score": 82,
   "recommendation": "Investigate",
   "requirements_extracted": 9,

@@ -21,7 +21,7 @@ FitForge Agent is an evidence-based job-opportunity assessment workflow engine. 
          │                                   │
          ▼                                   ▼
 ┌─────────────────────────┐       ┌─────────────────────────┐
-│ Google Cloud Firestore  │       │ Google Gemini 3.5 Flash │
+│ Google Cloud Firestore  │       │ Google Gemini 3.6 Flash │
 │ Native Mode: (default)  │       │ Secret Manager Key      │
 │ Collection: workflows   │       │ (fitforge-gemini-api-key│
 └─────────────────────────┘       └─────────────────────────┘
@@ -87,7 +87,7 @@ gcloud run deploy fitforge-agent `
   --project="fitforge-agent-2026" `
   --region="us-central1" `
   --service-account="fitforge-runner@fitforge-agent-2026.iam.gserviceaccount.com" `
-  --set-env-vars="EXECUTION_MODE=gemini,GEMINI_MODEL=gemini-3.5-flash,PERSISTENCE_BACKEND=firestore,GOOGLE_CLOUD_PROJECT=fitforge-agent-2026,FIRESTORE_DATABASE=(default),FIRESTORE_COLLECTION=workflows" `
+  --set-env-vars="EXECUTION_MODE=gemini,GEMINI_MODEL=gemini-3.6-flash,PERSISTENCE_BACKEND=firestore,GOOGLE_CLOUD_PROJECT=fitforge-agent-2026,FIRESTORE_DATABASE=(default),FIRESTORE_COLLECTION=workflows" `
   --set-secrets="GEMINI_API_KEY=fitforge-gemini-api-key:1" `
   --allow-unauthenticated `
   --port=8080 `

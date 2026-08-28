@@ -2,7 +2,7 @@
 
 [![Live Demo](https://img.shields.io/badge/Demo-Google%20Cloud%20Run-blue)](https://fitforge-agent-169201386255.us-central1.run.app)
 [![Google ADK](https://img.shields.io/badge/Orchestration-Google%20ADK-purple)](https://github.com/google/agent-development-kit)
-[![Gemini 3.5 Flash](https://img.shields.io/badge/AI-Gemini%203.5%20Flash-orange)](https://deepmind.google/technologies/gemini/)
+[![Gemini 3.6 Flash](https://img.shields.io/badge/AI-Gemini%203.6%20Flash-orange)](https://deepmind.google/technologies/gemini/)
 [![Tests](https://img.shields.io/badge/Tests-80%20Passed-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -61,7 +61,7 @@ FitForge operates as a coordinated 5-specialist agent pipeline orchestrated thro
 ## 🛠️ Google Technologies Proven in Implementation
 
 * **Google Agent Development Kit (ADK)**: Multi-agent choreography and state machine lifecycle via `InMemoryRunner`.
-* **Gemini 3.5 Flash (`gemini-3.5-flash`)**: Multi-stage reasoning and Pydantic-enforced structured JSON output via `google-genai 2.20.0`.
+* **Gemini 3.6 Flash (`gemini-3.6-flash`)**: Multi-stage reasoning and Pydantic-enforced structured JSON output via `google-genai 2.20.0`.
 * **Google Cloud Run**: Fully managed serverless deployment in `us-central1` with automated scale-to-zero, request-based CPU allocation, and single-instance concurrency lock.
 * **Google Cloud Firestore (Native Mode)**: Atomic persistence for workflow states and audit logs in the `(default)` database.
 * **Google Secret Manager**: Zero-disk credential injection at container startup (`fitforge-gemini-api-key:1`).

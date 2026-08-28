@@ -14,9 +14,9 @@ This script provides exact timing and narration for the video demonstration subm
 ---
 
 ### [0:25 – 0:50] The Solution: FitForge Agent & Taskmaster
-* **Visual**: FitForge Landing page (`https://fitforge-agent-169201386255.us-central1.run.app`). Clean interface banner highlighting Google ADK & Gemini 3.5 Flash.
+* **Visual**: FitForge Landing page (`https://fitforge-agent-169201386255.us-central1.run.app`). Clean interface banner highlighting Google ADK & Gemini 3.6 Flash.
 * **Narration**:
-  > *"Meet FitForge Agent, an evidence-backed multi-agent workflow engine built for the Google Agentic AI Hackathon in the Taskmaster category. Instead of generating generic fluff or hallucinating qualifications, FitForge coordinates five specialized AI agents powered by the Google Agent Development Kit and Gemini 3.5 Flash to extract factual career evidence, score multidimensional fit, and generate concrete interview strategy."*
+  > *"Meet FitForge Agent, an evidence-backed multi-agent workflow engine built for the Google Agentic AI Hackathon in the Taskmaster category. Instead of generating generic fluff or hallucinating qualifications, FitForge coordinates five specialized AI agents powered by the Google Agent Development Kit and Gemini 3.6 Flash to extract factual career evidence, score multidimensional fit, and generate concrete interview strategy."*
 
 ---
 
@@ -43,7 +43,7 @@ This script provides exact timing and narration for the video demonstration subm
 * **Narration**:
   > *"Let’s examine how FitForge is architected on Google Cloud Platform:
   > • The runtime is built using the **Google Agent Development Kit (ADK)** with `InMemoryRunner` for structured agent choreography.
-  > • Reasoning and structured extraction are powered by **Gemini 3.5 Flash** using the official Google GenAI SDK.
+  > • Reasoning and structured extraction are powered by **Gemini 3.6 Flash** using the official Google GenAI SDK.
   > • The application is deployed on **Google Cloud Run** in `us-central1` with automatic scale-to-zero, request-based CPU allocation, and a dedicated service identity.
   > • Credentials are never stored on disk—Cloud Run injects the Gemini API key securely from **Google Secret Manager** at startup.
   > • Every workflow state and audit event is saved atomically to **Google Cloud Firestore** in Native mode."*

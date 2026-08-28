@@ -14,7 +14,7 @@ FitForge Agent was conceived, architected, and built with AI-assisted software d
 ## 🛠️ 2. Proven Technologies & Google Services Used
 FitForge Agent is built using proven standard open-source libraries and verified Google Cloud Platform services:
 * **Google Agent Development Kit (ADK)**: Multi-agent orchestration via `InMemoryRunner`.
-* **Google GenAI SDK & Gemini 3.5 Flash**: Structured reasoning, normalization, evidence extraction, and strategic planning.
+* **Google GenAI SDK & Gemini 3.6 Flash**: Structured reasoning, normalization, evidence extraction, and strategic planning.
 * **Google Cloud Run**: Fully managed container execution with least-privilege service account identity (`fitforge-runner`).
 * **Google Cloud Firestore (Native Mode)**: Atomic persistence for workflow states and audit logs.
 * **Google Secret Manager**: Zero-disk API key injection into runtime process memory.
