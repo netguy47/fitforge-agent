@@ -21,7 +21,7 @@ This script provides exact timing and narration for the video demonstration subm
 ---
 
 ### [0:50 – 2:30] Live Demonstration: Synthetic District Manager Workflow
-* **Visual**: Click **Load Sample** (Restaurant District Manager profile). Show the filled candidate resume ($32M volume, 15 units, 98.4% audit scores) and Midwest franchise job description.
+* **Visual**: Click **Load Sample** (Restaurant District Manager profile). Show the filled candidate resume ($16.5M volume, 7 units, 98.4% audit scores, 4.2% EBITDA growth) and fast-casual 8-10 unit job description.
 * **Narration**:
   > *"Let’s test FitForge with a realistic synthetic benchmark: an Operations Leader evaluating a Regional District Manager opportunity. We click 'Load Sample' to populate candidate priorities, compensation requirements, and role text, then submit for assessment."*
 * **Visual**: Workflow progress bar moves through the 5-step agent lifecycle in real time.
@@ -32,9 +32,9 @@ This script provides exact timing and narration for the video demonstration subm
   > 3. The **Fit Analyst** calculates an objective fit score across operations, finance, and talent leadership.
   > 4. The **Action Planner** synthesizes high-impact interview positioning and customized diligence questions.
   > 5. And crucially, our **Quality Gate** validates schema consistency, completeness, and evidence truthfulness before persisting the final state."*
-* **Visual**: Display completed assessment: Fit Score 82/100 (`Investigate`), Evidence Matrix (9 mapped requirements), and the Strategic Action Plan.
+* **Visual**: Display completed assessment: Fit Score 82/100 (`Investigate`), Evidence Matrix (9 mapped requirements with 7 direct proof citations), and the Strategic Action Plan.
 * **Narration**:
-  > *"Here is the output: a comprehensive 82/100 score recommending 'Investigate', highlighting that the candidate exceeds multi-unit unit scale (15 units vs 10 required), while flagging new-unit expansion as a talking point to address. The Action Plan provides tailored interview questions to probe franchise support structures."*
+  > *"Here is the authentic output: a grounded 82/100 score recommending 'Investigate'. In the Evidence Matrix, FitForge confirmed 7 direct matches—including multi-unit oversight of 7 stores, 4.2% EBITDA growth, 2.8% labor reduction, and 9 internal management promotions. On qualifications, while daily travel is inferred from regional experience, the candidate's driver's license status is unstated in the résumé and flagged for verification. The Action Plan provides tailored STAR talking points and diligence questions regarding territory radius and bonus payout structures."*
 
 ---
 

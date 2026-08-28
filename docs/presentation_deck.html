@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitForge Agent — Interactive Video Presentation & Production Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #070d1e;
+            --bg-card: #0d1733;
+            --bg-glass: rgba(13, 23, 51, 0.75);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #1a73e8;
+            --accent-teal: #00f2fe;
+            --accent-cyan: #4facfe;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #020617;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 16:9 Presentation Stage */
+        #presentation-stage {
+            width: 100vw;
+            height: 56.25vw; /* 16:9 Aspect Ratio */
+            max-height: 100vh;
+            max-width: 177.78vh;
+            background: radial-gradient(circle at 50% 20%, #0f2048 0%, #070d1e 80%, #030712 100%);
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 100px rgba(0, 242, 254, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Top Toolbar */
+        .stage-header {
+            height: 56px;
+            background: rgba(7, 13, 30, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 50;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .stage-header.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .brand-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .brand-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+        }
+
+        .timer-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+
+        .time-pill {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            color: var(--accent-teal);
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-ctrl {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-ctrl:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-ctrl.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-cyan);
+            color: #fff;
+        }
+
+        select.voice-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            outline: none;
+            cursor: pointer;
+            max-width: 180px;
+        }
+
+        select.voice-select option {
+            background: #0d1733;
+            color: #fff;
+        }
+
+        /* Main Viewport Container */
+        .stage-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Scenes Container */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 40px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.98);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+            z-index: 10;
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+            z-index: 20;
+        }
+
+        /* Typography & Layouts */
+        .scene-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .scene-meta-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .scene-tag {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-teal);
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .timecode-tag {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .scene-title {
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 40%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .scene-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            max-width: 900px;
+            line-height: 1.5;
+        }
+
+        .scene-content {
+            flex: 1;
+            display: flex;
+            gap: 24px;
+            align-items: stretch;
+            position: relative;
+        }
+
+        /* Card Layouts */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 100%;
+        }
+
+        .card-grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            width: 100%;
+        }
+
+        .tech-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+            opacity: 0.8;
+        }
+
+        .tech-card .icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 18px;
+            color: var(--accent-teal);
+        }
+
+        .tech-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .tech-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Screen Recording Placeholder Stage */
+        .video-placeholder-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            border: 2px dashed rgba(0, 242, 254, 0.35);
+            background: rgba(13, 23, 51, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .video-placeholder-container video, 
+        .video-placeholder-container iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #020617;
+            border-radius: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Video status indicator (editing mode only) */
+        .video-status-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 3px 10px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Production Mode: hide video controls, upload buttons, status indicators */
+        body.production-mode .video-placeholder-container video {
+            pointer-events: none;
+        }
+        body.production-mode .btn-upload,
+        body.production-mode .video-status-indicator {
+            display: none !important;
+        }
+
+        .placeholder-badge {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(0, 242, 254, 0.2);
+            color: var(--accent-teal);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .placeholder-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .placeholder-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            max-width: 600px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-upload:hover {
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.5);
+            transform: translateY(-1px);
+        }
+
+        /* Hub-and-Spoke Architecture */
+        .hub-spoke-container {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            position: relative;
+        }
+
+        .hub-central-card {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            background: linear-gradient(145deg, #0d214d, #09132e);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 16px;
+            padding: 30px 24px;
+            text-align: center;
+            box-shadow: 0 0 35px rgba(0, 242, 254, 0.25), inset 0 0 20px rgba(0, 242, 254, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 5;
+        }
+
+        .hub-central-card .hub-badge {
+            background: rgba(0, 242, 254, 0.2);
+            color: var(--accent-teal);
+            border: 1px solid rgba(0, 242, 254, 0.5);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 14px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .hub-central-card h3 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .hub-central-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            max-width: 280px;
+        }
+
+        .spoke-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .spoke-card:hover {
+            border-color: rgba(0, 242, 254, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .spoke-card .spoke-badge {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .spoke-card h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .spoke-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        .spoke-top-left { grid-column: 1; grid-row: 1; }
+        .spoke-bottom-left { grid-column: 1; grid-row: 2; }
+        .spoke-top-right { grid-column: 3; grid-row: 1; }
+        .spoke-bottom-right { grid-column: 3; grid-row: 2; }
+
+        /* Modal for Live Recording Drop */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-card {
+            background: #0d1733;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px 30px;
+            width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-card h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .modal-card input[type="file"] {
+            margin: 16px 0;
+            width: 100%;
+            color: #94a3b8;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 16:9 Presentation Stage -->
+    <div id="presentation-stage">
+
+        <!-- Top Header & Controls -->
+        <header class="stage-header" id="stage-header">
+            <div class="brand-pill">
+                <div class="brand-logo">F</div>
+                <div class="brand-title">FITFORGE AGENT</div>
+                <div class="status-badge">DEPLOYED ON GOOGLE CLOUD RUN</div>
+            </div>
+
+            <div class="timer-group">
+                <span>TOTAL:</span>
+                <span class="time-pill" id="total-timer">0:00 / 3:45</span>
+                <span>|</span>
+                <span>SCENE:</span>
+                <span class="time-pill" id="scene-timer">0:00 / 0:20</span>
+            </div>
+
+            <div class="controls-group">
+                <select class="voice-select" id="voice-select" title="Speech Synthesis Voice">
+                    <option value="">Loading voices...</option>
+                </select>
+                <button class="btn-ctrl" id="btn-reset-voice" title="Reset Voice to Default">↺ Reset Voice</button>
+                <button class="btn-ctrl active" id="btn-voice" title="Toggle Speech Narration">🔊 Voice: ON</button>
+                <button class="btn-ctrl" id="btn-play">▶ Play [Space]</button>
+                <button class="btn-ctrl" id="btn-prod" title="Toggle Clean Recording View">🎬 Production Mode [P]</button>
+                <button class="btn-ctrl" id="btn-script">Script [N]</button>
+                <button class="btn-ctrl" id="btn-fullscreen">⛶ [F]</button>
+            </div>
+        </header>
+
+        <!-- Viewport & 7 Scenes -->
+        <div class="stage-viewport">
+
+            <!-- SCENE 1: Problem (0:00 – 0:20) -->
+            <section class="scene active" id="scene-1" data-duration="20" data-timecode="0:00 – 0:20">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 01</span>
+                            <span class="timecode-tag">TIMECODE: 0:00 – 0:20 (DURATION: 20s)</span>
+                        </div>
+                        <h1 class="scene-title">FitForge Agent: Evidence-Based Job-Opportunity Assessment</h1>
+                        <p class="scene-subtitle">Evaluating job opportunities is time-consuming and subjective. Job seekers struggle to systematically map career accomplishments to requirements.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="card-grid">
+                        <div class="tech-card">
+                            <div class="icon-box">📊</div>
+                            <h3>01. Evidence Disconnect</h3>
+                            <p>Manual review fails to systematically verify complex job requirements against authentic candidate accomplishments and certifications.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">🎯</div>
+                            <h3>02. Undetected Hard Gaps</h3>
+                            <p>Critical prerequisites, non-negotiables, and compliance factors are easily overlooked in high-volume application cycles.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">📋</div>
+                            <h3>03. Generic Applications</h3>
+                            <p>Without structured evidence mapping, applicants submit ungrounded generic materials that fail technical scrutiny.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 2: Solution (0:20 – 0:40) -->
+            <section class="scene" id="scene-2" data-duration="20" data-timecode="0:20 – 0:40">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 02</span>
+                            <span class="timecode-tag">TIMECODE: 0:20 – 0:40 (DURATION: 20s)</span>
+                        </div>
+                        <h1 class="scene-title">Five-Stage Google ADK Specialist Architecture</h1>
+                        <p class="scene-subtitle">Structured multi-agent coordination powered by Google Agent Development Kit and Gemini 3.5 Flash.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="card-grid-5">
+                        <div class="tech-card">
+                            <div class="icon-box">01</div>
+                            <h3>Intake Agent</h3>
+                            <p>Normalizes résumé, job specification, and career constraints with security filtering.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">02</div>
+                            <h3>Evidence Agent</h3>
+                            <p>Decomposes requirements and extracts verbatim résumé proof.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">03</div>
+                            <h3>Fit Analyst</h3>
+                            <p>Calculates grounded fit scores and strategic pursue/investigate recommendations.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">04</div>
+                            <h3>Action Planner</h3>
+                            <p>Formulates targeted next steps, employer questions, and STAR talking points.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">05</div>
+                            <h3>Quality Gate</h3>
+                            <p>Audits claims for contradictions and enforces single-pass correction.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 3: Real Workflow Input (0:40 – 1:15) -->
+            <section class="scene" id="scene-3" data-duration="35" data-timecode="0:40 – 1:15">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 03</span>
+                            <span class="timecode-tag">TIMECODE: 0:40 – 1:15 (DURATION: 35s)</span>
+                        </div>
+                        <h1 class="scene-title">Live Workflow Initiation: Deployed Cloud Run Surface</h1>
+                        <p class="scene-subtitle">Demonstrating live input intake: loading synthetic job specifications, candidate work history, and non-negotiables.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="video-placeholder-container" id="video-box-3">
+                        <div class="placeholder-badge">LIVE CLOUD RUN DEMONSTRATION · 35s</div>
+                        <h2 class="placeholder-title">Insert Screen Recording: Live Application Input</h2>
+                        <p class="placeholder-desc">Screen recording showing the live deployed FitForge interface at https://fitforge-agent-169201386255.us-central1.run.app/, loading the synthetic Multi-Unit District Manager profile, configuring constraints, and initiating the workflow.</p>
+                        <button class="btn-upload" onclick="openMediaModal(3)">📹 Attach Recording (Scene 3)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 4: Results (1:15 – 2:15) -->
+            <section class="scene" id="scene-4" data-duration="60" data-timecode="1:15 – 2:15">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 04</span>
+                            <span class="timecode-tag">TIMECODE: 1:15 – 2:15 (DURATION: 60s)</span>
+                        </div>
+                        <h1 class="scene-title" id="scene-4-title">Assessment Results: Evidence-Based Fit Analysis</h1>
+                        <p class="scene-subtitle" id="scene-4-subtitle">Authentic FitForge output: Fit Score, recommendation, evidence mappings, gaps, and action plan.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="video-placeholder-container" id="video-box-4">
+                        <div class="placeholder-badge" id="scene-4-badge">AUTHENTIC APPLICATION OUTPUT · 60s</div>
+                        <h2 class="placeholder-title" id="scene-4-box-title">Insert Screen Recording: Authentic FitForge Assessment Results</h2>
+                        <p class="placeholder-desc" id="scene-4-box-desc">Screen recording showing the actual FitForge output from a successful live run, including the generated Fit Score, recommendation, evidence mappings, qualification gaps, and actionable next steps.</p>
+                        <button class="btn-upload" onclick="openMediaModal(4)">📹 Attach Recording (Scene 4)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 5: Trust & Safeguards (2:15 – 2:45) -->
+            <section class="scene" id="scene-5" data-duration="30" data-timecode="2:15 – 2:45">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 05</span>
+                            <span class="timecode-tag">TIMECODE: 2:15 – 2:45 (DURATION: 30s)</span>
+                        </div>
+                        <h1 class="scene-title">Trust, Validation & Safeguards</h1>
+                        <p class="scene-subtitle">Multi-layered evaluation safeguards ensuring grounded claims, strict schema compliance, and full workflow traceability.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="safeguard-lifecycle">
+                        <div class="lifecycle-row">
+                            <div class="lifecycle-badge step1">Pydantic Schemas</div>
+                            <div class="lifecycle-details">
+                                <h4>Structured Schema Enforcement</h4>
+                                <p>Every agent communication boundary is governed by strict Pydantic models. Open dictionaries and invalid model payloads trigger automated single-pass schema repair.</p>
+                            </div>
+                        </div>
+
+                        <div class="lifecycle-row">
+                            <div class="lifecycle-badge step2">Quality Gatekeeper</div>
+                            <div class="lifecycle-details">
+                                <h4>Verbatim Evidence Auditing</h4>
+                                <p>The Quality Gate audits citations against raw résumé text. If ungrounded assertions are detected, exactly one corrective pass is permitted before final validation or termination.</p>
+                            </div>
+                        </div>
+
+                        <div class="lifecycle-row">
+                            <div class="lifecycle-badge step3">Workflow Traceability</div>
+                            <div class="lifecycle-details">
+                                <h4>Structured State Audit Trail</h4>
+                                <p>All lifecycle transitions (Created $\rightarrow$ Normalizing $\rightarrow$ Mapping $\rightarrow$ Scoring $\rightarrow$ Planning $\rightarrow$ Validating $\rightarrow$ Completed) are logged with persistent state traceability in Firestore.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 6: Architecture (2:45 – 3:20) -->
+            <section class="scene" id="scene-6" data-duration="35" data-timecode="2:45 – 3:20">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 06</span>
+                            <span class="timecode-tag">TIMECODE: 2:45 – 3:20 (DURATION: 35s)</span>
+                        </div>
+                        <h1 class="scene-title">Hub-and-Spoke Cloud Run Architecture</h1>
+                        <p class="scene-subtitle">Google Cloud Run serves as the central orchestration core, coordinating client interaction, AI reasoning, persistent storage, and secure credentials.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="hub-spoke-container">
+                        <!-- Spoke 1: Top Left -->
+                        <div class="spoke-card spoke-top-left">
+                            <div class="spoke-badge">🌐 CLIENT INTERFACE · HTTPS</div>
+                            <h4>FastAPI + HTMX Frontend</h4>
+                            <p>Containerized UI serving dynamic reactive components without heavy client bundles.</p>
+                        </div>
+
+                        <!-- Central Hub: Center -->
+                        <div class="hub-central-card">
+                            <div class="hub-badge">CENTRAL ORCHESTRATION HUB</div>
+                            <h3>Google Cloud Run</h3>
+                            <p>Serverless container runtime hosting the FitForge Coordinator, workflow state engine, and ADK agent runners.</p>
+                        </div>
+
+                        <!-- Spoke 2: Top Right -->
+                        <div class="spoke-card spoke-top-right">
+                            <div class="spoke-badge">💾 DOCUMENT PERSISTENCE</div>
+                            <h4>Cloud Firestore Native</h4>
+                            <p>NoSQL document store preserving persistent WorkflowResult state and lifecycle audit transitions.</p>
+                        </div>
+
+                        <!-- Spoke 3: Bottom Left -->
+                        <div class="spoke-card spoke-bottom-left">
+                            <div class="spoke-badge">⚡ AI REASONING · ADK RUNNER</div>
+                            <h4>Gemini 3.5 Flash</h4>
+                            <p>Five specialist reasoning stages executing structured evidence extraction and fit scoring.</p>
+                        </div>
+
+                        <!-- Spoke 4: Bottom Right -->
+                        <div class="spoke-card spoke-bottom-right">
+                            <div class="spoke-badge">🔒 LEAST-PRIVILEGE SECURITY</div>
+                            <h4>Google Secret Manager</h4>
+                            <p>Dedicated runtime service identity with strictly bounded resource-scoped access.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 7: Conclusion & Links (3:20 – 3:45) -->
+            <section class="scene" id="scene-7" data-duration="25" data-timecode="3:20 – 3:45">
+                <div class="scene-header">
+                    <div>
+                        <div class="scene-meta-group">
+                            <span class="scene-tag">SCENE 07</span>
+                            <span class="timecode-tag">TIMECODE: 3:20 – 3:45 (DURATION: 25s)</span>
+                        </div>
+                        <h1 class="scene-title">Conclusion & Open Verification</h1>
+                        <p class="scene-subtitle">Objective career intelligence empowering candidates with verifiable qualifications and transparent recommendations.</p>
+                    </div>
+                </div>
+
+                <div class="scene-content">
+                    <div class="card-grid">
+                        <div class="tech-card">
+                            <div class="icon-box">🛡️</div>
+                            <h3>Ethical Boundaries</h3>
+                            <p>FitForge is an advisory career intelligence agent. It does not submit automated applications or make hiring decisions.</p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">🌐</div>
+                            <h3>Public Deployment</h3>
+                            <p style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-teal); word-break: break-all;">
+                                https://fitforge-agent-169201386255.us-central1.run.app/
+                            </p>
+                        </div>
+                        <div class="tech-card">
+                            <div class="icon-box">💻</div>
+                            <h3>Open Source GitHub</h3>
+                            <p style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-teal); word-break: break-all;">
+                                https://github.com/netguy47/fitforge-agent
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Teleprompter / Narration Drawer -->
+        <div class="teleprompter-drawer" id="teleprompter-drawer">
+            <div class="teleprompter-prefix" id="script-scene-label">SCENE 01 SCRIPT</div>
+            <div class="teleprompter-text" id="script-text">
+                "Evaluating job opportunities is time-consuming and subjective. Job seekers struggle to systematically map their career evidence against complex job requirements, identify genuine qualification gaps, and formulate concrete application action plans. FitForge Agent solves this through structured, multi-agent evaluation."
+            </div>
+        </div>
+
+        <!-- Bottom Timeline Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+
+    </div>
+
+    <!-- Modal for Video File Attachment -->
+    <div class="modal-overlay" id="media-modal">
+        <div class="modal-card">
+            <h3>Attach Screen Recording</h3>
+            <p style="font-size: 13px; color: var(--text-muted);">Select an MP4/WebM screen recording file from your local machine to insert into this scene placeholder:</p>
+            <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/ogg">
+            <div class="modal-actions">
+                <button class="btn-ctrl" onclick="closeMediaModal()">Cancel</button>
+                <button class="btn-upload" onclick="attachSelectedVideo()">Attach Recording</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // DEMO RESULT INJECTION CONFIGURATION
+        // ONLY SET verified=true AFTER SUCCESSFUL LIVE FITFORGE EXECUTION HAS BEEN CONFIRMED.
+        // =========================================================================
+        const DEMO_RESULT = {
+            verified: true,
+            fitScore: 82,
+            recommendation: "Investigate",
+            directMatchCount: 7,
+            highlightedGap: "Valid driver's license unstated on resume",
+            highlightedEvidence: "Direct oversight of 7 high-volume restaurant locations ($16.5M volume), 4.2% EBITDA growth, and 9 GM/AGM promotions"
+        };
+
+        // Master Scene Scripts & Timings (Exact 3:45 / 225s Total)
+        const SCENE_DATA = [
+            {
+                id: 1,
+                duration: 20,
+                script: "Evaluating job opportunities is time-consuming and subjective. Job seekers struggle to systematically map their career evidence against complex job requirements, identify genuine qualification gaps, and formulate concrete application action plans. FitForge Agent solves this through structured, multi-agent evaluation."
+            },
+            {
+                id: 2,
+                duration: 20,
+                script: "FitForge is an evidence-based job-opportunity assessment workflow built with Google's Agent Development Kit and Gemini 3.5 Flash. Instead of a single unstructured prompt, FitForge coordinates five specialized agents: Job Intake, Evidence Mapping, Fit Scoring, Action Planning, and Quality Gate verification—persisting verifiable results to Firestore."
+            },
+            {
+                id: 3,
+                duration: 35,
+                script: "Here is the live application running on Google Cloud Run. We load a synthetic job description for a District Manager alongside an applicant's résumé and career priorities. When we initiate the workflow, the FastAPI service orchestrates the multi-stage ADK pipeline, verifying requirements and extracting concrete evidence from the candidate's background."
+            },
+            {
+                id: 4,
+                duration: 60,
+                script: "The completed assessment delivers an objective Fit Score of 82 out of 100 with an Investigate recommendation. In the Evidence Matrix, FitForge confirmed 7 direct requirement matches with verbatim proof—including multi-unit oversight of 7 stores, 4.2% EBITDA growth, and 9 internal management promotions. On qualifications, while regional travel is inferred from multi-unit leadership, the candidate's driver's license status is unstated in the résumé and flagged for verification. The Action Planner generated tailored interview talking points and concrete diligence questions covering territory radius and bonus metrics. Finally, the Quality Gate verified zero hallucinations and 100% grounded citations before committing the state to Firestore."
+            },
+            {
+                id: 5,
+                duration: 30,
+                script: "Trust and safety are foundational to FitForge. Each stage output is strictly validated against Pydantic schemas. The Quality Gate audits assertions against verbatim résumé text, and if unsupported claims are detected, exactly one corrective pass is permitted. All state transitions are logged with structured traceability in Firestore."
+            },
+            {
+                id: 6,
+                duration: 35,
+                script: "Architecturally, FitForge is designed for serverless scalability and security. The containerized application is deployed to Google Cloud Run, serving a lightweight HTMX frontend. Agent orchestration leverages the Google ADK with Gemini 3.5 Flash, storing persistent WorkflowResult documents in Cloud Firestore with API keys secured in Secret Manager."
+            },
+            {
+                id: 7,
+                duration: 25,
+                script: "FitForge is an advisory tool—it does not submit job applications automatically or make automated hiring decisions. It empowers job seekers with grounded, objective career intelligence. You can explore the live service on Cloud Run and inspect the open-source codebase on GitHub. Thank you."
+            }
+        ];
+
+        const TOTAL_DURATION = 225; // 3 minutes 45 seconds
+
+        let currentSceneIndex = 0;
+        let isPlaying = false;
+        let voiceEnabled = true;
+        let productionMode = false;
+        let scriptVisible = true;
+        let totalElapsedSeconds = 0;
+        let sceneElapsedSeconds = 0;
+        let masterTimer = null;
+        let currentTargetModalScene = null;
+        let attachedVideos = { 3: null, 4: null };
+
+        // DOM References
+        const scenes = document.querySelectorAll('.scene');
+        const totalTimerEl = document.getElementById('total-timer');
+        const sceneTimerEl = document.getElementById('scene-timer');
+        const progressBarEl = document.getElementById('progress-bar');
+        const scriptSceneLabel = document.getElementById('script-scene-label');
+        const scriptTextEl = document.getElementById('script-text');
+        const btnPlay = document.getElementById('btn-play');
+        const btnVoice = document.getElementById('btn-voice');
+        const btnProd = document.getElementById('btn-prod');
+        const btnScript = document.getElementById('btn-script');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const stageHeader = document.getElementById('stage-header');
+        const teleprompterDrawer = document.getElementById('teleprompter-drawer');
+        const voiceSelect = document.getElementById('voice-select');
+
+        // Apply Result-Agnostic / Verified Content to Scene 4
+        function applyScene4DynamicContent() {
+            if (DEMO_RESULT.verified && DEMO_RESULT.fitScore !== null) {
+                document.getElementById('scene-4-title').textContent = `Assessment Results: ${DEMO_RESULT.fitScore}/100 Fit Score (${DEMO_RESULT.recommendation})`;
+                document.getElementById('scene-4-subtitle').textContent = `Verified authentic FitForge output with ${DEMO_RESULT.directMatchCount || 'verified'} direct matches and structured action plan.`;
+                document.getElementById('scene-4-badge').textContent = `VERIFIED OUTPUT · FIT SCORE: ${DEMO_RESULT.fitScore}`;
+            }
+        }
+        applyScene4DynamicContent();
+
+        // Persistent Voice Selection State
+        let selectedVoiceName = localStorage.getItem('fitforgeNarrationVoice') || null;
+        let availableVoices = [];
+
+        function populateVoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableVoices = window.speechSynthesis.getVoices().filter(v => v.lang && v.lang.startsWith('en'));
+            voiceSelect.innerHTML = '';
+            
+            if (availableVoices.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = 'Default System Voice';
+                voiceSelect.appendChild(opt);
+                return;
+            }
+
+            // Check if user's saved voice exists in available voices
+            const savedVoiceExists = availableVoices.some(v => v.name === selectedVoiceName);
+
+            // If no saved voice exists or saved voice is unavailable, determine preferred initial default
+            if (!savedVoiceExists) {
+                const defaultVoice = availableVoices.find(v => v.name.toLowerCase().includes('natural'))
+                    || availableVoices.find(v => v.name.toLowerCase().includes('google'))
+                    || availableVoices.find(v => v.name.toLowerCase().includes('microsoft') && v.name.toLowerCase().includes('natural'))
+                    || availableVoices.find(v => v.name.toLowerCase().includes('david'))
+                    || availableVoices[0];
+
+                if (defaultVoice) {
+                    selectedVoiceName = defaultVoice.name;
+                }
+            }
+
+            availableVoices.forEach((voice) => {
+                const opt = document.createElement('option');
+                opt.value = voice.name;
+                opt.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.name === selectedVoiceName) {
+                    opt.selected = true;
+                }
+                voiceSelect.appendChild(opt);
+            });
+        }
+
+        populateVoices();
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = populateVoices;
+        }
+
+        // Dropdown selection change listener
+        voiceSelect.addEventListener('change', () => {
+            if (voiceSelect.value) {
+                selectedVoiceName = voiceSelect.value;
+                localStorage.setItem('fitforgeNarrationVoice', selectedVoiceName);
+                if (isPlaying && voiceEnabled) {
+                    speakCurrentScene();
+                }
+            }
+        });
+
+        // Reset Voice Button listener
+        const btnResetVoice = document.getElementById('btn-reset-voice');
+        if (btnResetVoice) {
+            btnResetVoice.addEventListener('click', () => {
+                localStorage.removeItem('fitforgeNarrationVoice');
+                selectedVoiceName = null;
+                populateVoices();
+                if (isPlaying && voiceEnabled) {
+                    speakCurrentScene();
+                }
+            });
+        }
+
+        // Helper to calculate start time of any scene
+        function getCumulativeStartTime(sceneIdx) {
+            return SCENE_DATA.slice(0, sceneIdx).reduce((acc, s) => acc + s.duration, 0);
+        }
+
+        // Voice Narration Trigger with Speech Heartbeat Workaround
+        let speechHeartbeat = null;
+        function speakCurrentScene() {
+            if (!voiceEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            if (speechHeartbeat) clearInterval(speechHeartbeat);
+            
+            const textToSpeak = SCENE_DATA[currentSceneIndex].script;
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            const selectedVoice = availableVoices.find(v => v.name === selectedVoiceName);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            // Chromium speech synthesis heartbeat to prevent 15s timeout
+            speechHeartbeat = setInterval(() => {
+                if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+                    window.speechSynthesis.pause();
+                    window.speechSynthesis.resume();
+                } else {
+                    clearInterval(speechHeartbeat);
+                }
+            }, 8000);
+
+            utterance.onend = () => {
+                if (speechHeartbeat) clearInterval(speechHeartbeat);
+            };
+
+            utterance.onerror = () => {
+                if (speechHeartbeat) clearInterval(speechHeartbeat);
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Pause all attached videos (called before every scene change)
+        function pauseAllVideos() {
+            Object.values(attachedVideos).forEach(vid => {
+                if (vid && !vid.paused) vid.pause();
+            });
+        }
+
+        // Scene Transition Handler
+        function showScene(index) {
+            if (index < 0 || index >= SCENE_DATA.length) return;
+
+            // Pause every attached video before changing scenes
+            pauseAllVideos();
+            
+            scenes.forEach(s => s.classList.remove('active'));
+            scenes[index].classList.add('active');
+            
+            currentSceneIndex = index;
+            sceneElapsedSeconds = 0;
+            totalElapsedSeconds = getCumulativeStartTime(index);
+
+            // Update Teleprompter
+            scriptSceneLabel.textContent = `SCENE 0${index + 1} SCRIPT`;
+            scriptTextEl.textContent = `"${SCENE_DATA[index].script}"`;
+
+            updateTimers();
+
+            if (isPlaying) {
+                speakCurrentScene();
+                // Start the incoming scene's video from the beginning
+                const vid = attachedVideos[index + 1];
+                if (vid) {
+                    vid.currentTime = 0;
+                    vid.play().catch(() => {});
+                }
+            } else {
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                // Reset incoming scene video to start but leave paused
+                const vid = attachedVideos[index + 1];
+                if (vid) {
+                    vid.currentTime = 0;
+                }
+            }
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function updateTimers() {
+            const currentSceneDuration = SCENE_DATA[currentSceneIndex].duration;
+            totalTimerEl.textContent = `${formatTime(totalElapsedSeconds)} / ${formatTime(TOTAL_DURATION)}`;
+            sceneTimerEl.textContent = `${formatTime(sceneElapsedSeconds)} / ${formatTime(currentSceneDuration)}`;
+            
+            const pct = (totalElapsedSeconds / TOTAL_DURATION) * 100;
+            progressBarEl.style.width = `${Math.min(pct, 100)}%`;
+        }
+
+        // Main Timer Loop (1s Interval)
+        function tick() {
+            if (!isPlaying) return;
+
+            totalElapsedSeconds++;
+            sceneElapsedSeconds++;
+
+            const currentSceneDuration = SCENE_DATA[currentSceneIndex].duration;
+
+            if (sceneElapsedSeconds >= currentSceneDuration) {
+                if (currentSceneIndex < SCENE_DATA.length - 1) {
+                    showScene(currentSceneIndex + 1);
+                } else {
+                    pausePresentation();
+                    totalElapsedSeconds = TOTAL_DURATION;
+                    updateTimers();
+                    return;
+                }
+            } else {
+                updateTimers();
+            }
+        }
+
+        function startPresentation() {
+            if (isPlaying) return;
+            isPlaying = true;
+            btnPlay.textContent = '⏸ Pause [Space]';
+            btnPlay.classList.add('active');
+            masterTimer = setInterval(tick, 1000);
+            speakCurrentScene();
+
+            // Resume the active scene's video from its current position (not from 0)
+            const sceneNum = currentSceneIndex + 1;
+            const vid = attachedVideos[sceneNum];
+            if (vid && (sceneNum === 3 || sceneNum === 4)) {
+                vid.play().catch(() => {});
+            }
+        }
+
+        function pausePresentation() {
+            isPlaying = false;
+            btnPlay.textContent = '▶ Play [Space]';
+            btnPlay.classList.remove('active');
+            if (masterTimer) clearInterval(masterTimer);
+            if (speechHeartbeat) clearInterval(speechHeartbeat);
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+            // Pause all attached videos at their current timestamp (do NOT reset to 0)
+            pauseAllVideos();
+        }
+
+        function togglePlay() {
+            if (isPlaying) pausePresentation();
+            else startPresentation();
+        }
+
+        function toggleProductionMode() {
+            productionMode = !productionMode;
+            document.body.classList.toggle('production-mode', productionMode);
+            stageHeader.classList.toggle('hidden', productionMode);
+            teleprompterDrawer.classList.toggle('hidden', productionMode);
+            btnProd.classList.toggle('active', productionMode);
+
+            // Toggle native video controls visibility
+            Object.values(attachedVideos).forEach(vid => {
+                if (vid) {
+                    vid.controls = !productionMode;
+                }
+            });
+        }
+
+        function toggleScript() {
+            scriptVisible = !scriptVisible;
+            teleprompterDrawer.classList.toggle('hidden', !scriptVisible);
+            btnScript.classList.toggle('active', scriptVisible);
+        }
+
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            btnVoice.textContent = voiceEnabled ? '🔊 Voice: ON' : '🔇 Voice: OFF';
+            btnVoice.classList.toggle('active', voiceEnabled);
+            if (!voiceEnabled && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            } else if (voiceEnabled && isPlaying) {
+                speakCurrentScene();
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        // Media Modal & Video Upload Attachment
+        function openMediaModal(sceneNum) {
+            currentTargetModalScene = sceneNum;
+            document.getElementById('media-modal').style.display = 'flex';
+        }
+
+        function closeMediaModal() {
+            document.getElementById('media-modal').style.display = 'none';
+        }
+
+        function attachSelectedVideo() {
+            const input = document.getElementById('video-file-input');
+            if (input.files && input.files[0] && currentTargetModalScene) {
+                const file = input.files[0];
+                const url = URL.createObjectURL(file);
+                const container = document.getElementById(`video-box-${currentTargetModalScene}`);
+                const sceneNum = currentTargetModalScene;
+                const showControls = !productionMode;
+
+                // Build video element: muted, paused, no autoplay, no loop
+                container.innerHTML = `<video src="${url}" ${showControls ? 'controls' : ''} muted playsinline preload="auto"></video>`
+                    + `<button class="btn-upload" onclick="openMediaModal(${sceneNum})" style="position:absolute;bottom:12px;right:12px;z-index:10;">🔄 Replace Recording</button>`
+                    + `<span class="video-status-indicator">Scene ${sceneNum} Recording Attached</span>`;
+
+                const videoEl = container.querySelector('video');
+                videoEl.currentTime = 0;
+                attachedVideos[sceneNum] = videoEl;
+
+                // Do NOT begin playback — leave paused at frame 0
+                closeMediaModal();
+            }
+        }
+
+        // Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+            // Guard hotkeys when modal is open
+            if (document.getElementById('media-modal').style.display === 'flex') {
+                if (e.code === 'Escape') closeMediaModal();
+                return;
+            }
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                if (currentSceneIndex < SCENE_DATA.length - 1) {
+                    showScene(currentSceneIndex + 1);
+                }
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                if (currentSceneIndex > 0) {
+                    showScene(currentSceneIndex - 1);
+                }
+            } else if (e.key.toLowerCase() === 'p') {
+                toggleProductionMode();
+            } else if (e.key.toLowerCase() === 'n') {
+                toggleScript();
+            } else if (e.key.toLowerCase() === 'f') {
+                toggleFullscreen();
+            }
+        });
+
+        // Button Event Bindings
+        btnPlay.addEventListener('click', togglePlay);
+        btnVoice.addEventListener('click', toggleVoice);
+        btnProd.addEventListener('click', toggleProductionMode);
+        btnScript.addEventListener('click', toggleScript);
+        btnFullscreen.addEventListener('click', toggleFullscreen);
+
+        // Initialize First Scene
+        showScene(0);
+    </script>
+</body>
+</html>

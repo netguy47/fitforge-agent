@@ -183,35 +183,54 @@ class GeminiAdkExecutionAdapter(WorkflowExecutionAdapter):
 
         final_text: Optional[str] = None
         event_output: Any = None
+        max_transient_retries = 2 if self._runner_factory is None else 0
 
-        # Execute through ADK runner.run_async
-        try:
-            async for event in runner.run_async(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=new_message,
-            ):
-                if event.error_code or event.error_message:
-                    raise RuntimeError(f"ADK Event Error: {event.error_message or event.error_code}")
-                if event.output is not None:
-                    event_output = event.output
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if part.text:
-                            final_text = part.text
-        except Exception as prov_err:
-            category = categorize_gemini_error(prov_err)
-            if category != "gemini_output_invalid":
-                # Provider-level error: do NOT attempt schema repair
-                duration = time.monotonic() - start_time
-                logger.error(
-                    "ADK stage '%s' failed in %.2fs with category: %s",
-                    stage_name,
-                    duration,
-                    category,
-                )
-                raise RuntimeError(f"Gemini execution failed: {category}") from prov_err
-            final_text = ""
+        # Execute through ADK runner.run_async with transient retry
+        for attempt in range(max_transient_retries + 1):
+            final_text = None
+            event_output = None
+            try:
+                async for event in runner.run_async(
+                    user_id=user_id,
+                    session_id=session_id,
+                    new_message=new_message,
+                ):
+                    if event.error_code or event.error_message:
+                        raise RuntimeError(f"ADK Event Error: {event.error_message or event.error_code}")
+                    if event.output is not None:
+                        event_output = event.output
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if part.text:
+                                final_text = part.text
+                break
+            except Exception as prov_err:
+                category = categorize_gemini_error(prov_err)
+                if category in {"gemini_unavailable", "gemini_rate_limited", "gemini_timeout"} and attempt < max_transient_retries:
+                    wait_time = (attempt + 1) * 2
+                    logger.warning(
+                        "ADK stage '%s' transient error (%s). Retrying in %ds (attempt %d/%d)...",
+                        stage_name,
+                        category,
+                        wait_time,
+                        attempt + 1,
+                        max_transient_retries,
+                    )
+                    await asyncio.sleep(wait_time)
+                    continue
+
+                if category != "gemini_output_invalid":
+                    # Provider-level error: do NOT attempt schema repair
+                    duration = time.monotonic() - start_time
+                    logger.error(
+                        "ADK stage '%s' failed in %.2fs with category: %s",
+                        stage_name,
+                        duration,
+                        category,
+                    )
+                    raise RuntimeError(f"Gemini execution failed: {category}") from prov_err
+                final_text = ""
+                break
 
         # Validate structured output from event
         if event_output is not None:
