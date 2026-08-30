@@ -9,8 +9,8 @@ This document contains copy-ready fields for the **FitForge Agent** entry in the
 ### Project Name
 `FitForge Agent`
 
-### Elevator Pitch (198 / 200 characters)
-`Evidence-backed job assessment engine using Google ADK, Gemini 3.6 Flash, Cloud Run, and Firestore to map career evidence, score multidimensional fit, and generate concrete interview strategy.`
+### Elevator Pitch (159 / 200 characters)
+`Autonomous evidence-backed workflow using Google ADK, Gemini 3.6 Flash, Cloud Run, and Firestore to map career proof, score job fit, and produce an audited action plan.`
 
 ---
 
@@ -20,12 +20,14 @@ This document contains copy-ready fields for the **FitForge Agent** entry in the
 Navigating career transitions and evaluating complex job opportunities is high-stakes, yet existing tools are fundamentally broken. Job seekers are forced to rely either on keyword-matching ATS scanners that miss transferable achievements or generic conversational LLMs that hallucinate qualifications and give vague advice. We set out to build an evidence-based multi-agent system that approaches career evaluation like an elite executive coach and diligent hiring auditor: extracting verifiable proof, scoring objective alignment, and formulating actionable interview intelligence without hallucinations.
 
 ### What It Does
-FitForge Agent coordinates a specialized 5-agent pipeline orchestrated through the Google Agent Development Kit (ADK):
+FitForge Agent coordinates a specialized 5-agent pipeline orchestrated through the Google Agent Development Kit (ADK). The candidate supplies the source material once; no prompts or manual routing are required between stages:
 1. **Intake Agent**: Normalizes unstructured candidate résumés and job postings into structured evaluation criteria.
 2. **Evidence Agent**: Maps factual candidate proof line-by-line against explicit role requirements, identifying strong matches and potential gaps.
 3. **Fit Analyst**: Computes a grounded, multi-factor fit score (0–100) and actionable recommendation (`Pursue`, `Investigate`, `Pass`).
 4. **Action Planner**: Generates targeted interview positioning strategies, vulnerability defenses, and customized diligence questions.
 5. **Quality Gatekeeper**: Enforces Pydantic schema consistency, completeness, and truthfulness before committing the final state to Google Cloud Firestore.
+
+The autonomous lifecycle is `created → normalizing → mapping_evidence → scoring_fit → planning_actions → validating → completed`. Each specialist consumes structured state from the prior stage and passes validated output forward. The Quality Gatekeeper can trigger one controlled correction cycle before persistence. FitForge intentionally reserves the consequential decision to submit an application for the candidate while autonomously completing the entire assessment and action-planning workflow.
 
 ### How It Was Built
 * **Agent Framework**: Google Agent Development Kit (ADK) using `InMemoryRunner` for multi-agent state choreography.
@@ -43,6 +45,7 @@ FitForge Agent coordinates a specialized 5-agent pipeline orchestrated through t
 
 ### Accomplishments That We're Proud Of
 * Fully verified end-to-end cloud pipeline on Google Cloud Run with live Gemini 3.6 Flash and Cloud Firestore persistence.
+* Autonomous seven-state workflow with five strictly separated specialist agents and no manual routing between stages.
 * 100% clean test suite with 80 passing automated unit and integration tests.
 * Hardened security posture: zero credentials committed to Git, zero PII logged, and resource-scoped IAM permissions.
 * Sub-100 millisecond response times on cached/deterministic requests and comprehensive structured reports on live runs.
@@ -85,5 +88,5 @@ We mastered the Google Agent Development Kit (ADK) architecture, experiencing fi
 * **Reproducible Testing Available**: `Yes` (Comprehensive 80-test pytest suite with offline socket blocker)
 * **Hosted Application URL**: `https://fitforge-agent-169201386255.us-central1.run.app`
 * **Public GitHub Repository**: `https://github.com/netguy47/fitforge-agent`
-* **Video Demo URL**: *(Populated by Donald after manual recording upload)*
+* **Video Demo URL**: `https://youtu.be/iA8fy3MUdBs`
 * **Eligibility Exclusion**: *Startup Excellence is NOT selected (Individual entry).*
