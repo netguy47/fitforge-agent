@@ -6,7 +6,29 @@
 [![Tests](https://img.shields.io/badge/Tests-80%20Passed-brightgreen)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-FitForge Agent is an evidence-based job-opportunity assessment multi-agent system built for the **Google Agentic AI Hackathon (Taskmaster Category)**. It converts a candidate's résumé, target job description, and career priorities into an objective career intelligence report featuring an actionable recommendation (`Pursue`, `Investigate`, `Pass`), transparent fit score (0–100), requirement-to-evidence proof matrix, gap analysis, and tailored interview positioning strategies.
+FitForge Agent is an evidence-based multi-agent system built for the **Google Agentic AI Hackathon (Taskmaster Category)**. It autonomously transforms a candidate's résumé, target job description, and career priorities into objective career intelligence: an actionable recommendation (`Pursue`, `Investigate`, `Pass`), transparent fit score (0–100), requirement-to-evidence proof matrix, gap analysis, and tailored interview positioning. The user supplies the source material once; FitForge coordinates every analytical and validation stage without manual routing between agents.
+
+## Judge Quick Start
+
+1. [Watch the public demonstration](https://youtu.be/iA8fy3MUdBs).
+2. [Try the deployed Cloud Run application](https://fitforge-agent-169201386255.us-central1.run.app).
+3. Review the [architecture diagram](docs/architecture.png) and the five specialist boundaries below.
+4. Inspect the [verified live result](docs/verified-demo-result.md) and [raw assessment record](docs/live_assessment_raw.json).
+5. Run `pytest -v` locally—expected result: **80 passed** with external network access blocked by the test suite.
+
+The demonstrated workflow uses Gemini 3.6 Flash through Google ADK, persists workflow and audit state in Firestore, and runs on Google Cloud Run.
+
+## Proof of Autonomous Execution
+
+After the user provides the three source inputs, FitForge independently executes the complete workflow:
+
+```text
+created → normalizing → mapping_evidence → scoring_fit → planning_actions → validating → completed
+```
+
+No prompts or manual routing are required between stages. Each specialist receives structured state from the preceding stage, produces schema-validated output, and passes it forward automatically. The Quality Gate can initiate one controlled correction cycle before the final assessment and timestamped audit record are persisted.
+
+FitForge deliberately keeps the consequential decision to submit a job application under human control. That safety boundary does not interrupt the autonomous assessment workflow; it prevents an advisory system from taking an irreversible employment action on the candidate's behalf.
 
 ---
 
